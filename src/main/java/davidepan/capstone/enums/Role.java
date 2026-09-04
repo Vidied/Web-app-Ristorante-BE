@@ -1,0 +1,5 @@
+package davidepan.capstone.enums;
+
+public enum Role {
+    ROLE_USER, ROLE_ADMIN
+}
