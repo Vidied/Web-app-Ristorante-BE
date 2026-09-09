@@ -16,5 +16,6 @@ public record OrderResponseDTO(
         OrderStatus orderStatus,
         String notes,
         BigDecimal totalAmount,
-        List<OrderItemResponseDTO> items
+        List<OrderItemResponseDTO> items,
+        BigDecimal coverPrice
 ) {}

@@ -13,6 +13,7 @@ public record ProductDTO(
         String description,
         @NotNull(message = "Il prezzo del prodotto è obbligatorio!")
         BigDecimal price,
+        BigDecimal takeawayPrice,
         Boolean isAvailable,
         DestinationArea destinationArea,
         @NotNull(message = "Id della categoria è obbligatoria")

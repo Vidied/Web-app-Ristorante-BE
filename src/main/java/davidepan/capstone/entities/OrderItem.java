@@ -36,13 +36,16 @@ public class OrderItem {
     @Column(nullable = false)
     private BigDecimal unitPrice;
 
+    private BigDecimal takeawayUnitPrice;
+
     private String notes;
 
-    public OrderItem(Order order, Product product, Integer quantity, BigDecimal unitPrice, String notes) {
+    public OrderItem(Order order, Product product, Integer quantity, BigDecimal unitPrice, BigDecimal takeawayUnitPrice, String notes) {
         this.order = order;
         this.product = product;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
+        this.takeawayUnitPrice = takeawayUnitPrice;
         this.notes = notes;
     }
 }

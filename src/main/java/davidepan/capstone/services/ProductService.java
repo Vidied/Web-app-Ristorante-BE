@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Import Spring corretto
 
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -79,11 +80,16 @@ public class ProductService {
 
         boolean isAvailable = !hasUnavailableIngredient && (body.isAvailable() != null ? body.isAvailable() : true);
         DestinationArea destination = body.destinationArea() != null ? body.destinationArea() : DestinationArea.SALA;
+//Se non viene specificato un perzzo per l'asporto verrà impostato a 2 euro in meno rispetto al prezzo normale
+        BigDecimal takeawayPrice = body.takeawayPrice() != null
+                ? body.takeawayPrice()
+                : body.price().subtract(BigDecimal.valueOf(2));
 
         Product product = new Product(
                 body.name(),
                 body.description(),
                 body.price(),
+                takeawayPrice,
                 isAvailable,
                 destination,
                 category,
@@ -130,8 +136,14 @@ public class ProductService {
         if (body.description() != null) found.setDescription(body.description());
         if (body.price() != null) found.setPrice(body.price());
         if (body.destinationArea() != null) found.setDestinationArea(body.destinationArea());
-
+        if (body.takeawayPrice() != null) {
+            found.setTakeawayPrice(body.takeawayPrice());
+        } else if (body.price() != null) {
+            found.setTakeawayPrice(body.price().subtract(BigDecimal.valueOf(2)));
+        }
+        if (body.takeawayPrice() != null) found.setTakeawayPrice(body.takeawayPrice());
         found.setIsAvailable(targetAvailability);
+
 
         Product updatedProduct = productRepository.save(found);
         return ProductResponseDTO.fromEntity(updatedProduct);

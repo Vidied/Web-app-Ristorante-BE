@@ -8,6 +8,7 @@ public record OrderItemResponseDTO(
         String productName,
         Integer quantity,
         BigDecimal unitPrice,
+        BigDecimal takeawayUnitPrice,
         String notes,
         DestinationArea destinationArea
 ) {}

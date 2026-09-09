@@ -32,6 +32,9 @@ public class Product {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
+    @Column(nullable = false, precision = 10, scale = 2, name = "takeaway_price")
+    private BigDecimal takeawayPrice;
+
     @Column(nullable = false, name = "is_available")
     private Boolean isAvailable = true;
 
@@ -51,10 +54,11 @@ public class Product {
     )
     private Set<Ingredient> ingredients = new HashSet<>();
 
-    public Product(String name, String description, BigDecimal price, Boolean isAvailable, DestinationArea destinationArea, Category category, Set<Ingredient> ingredients) {
+    public Product(String name, String description, BigDecimal price, BigDecimal takeawayPrice,Boolean isAvailable, DestinationArea destinationArea, Category category, Set<Ingredient> ingredients) {
         this.name = name;
         this.description = description;
         this.price = price;
+        this.takeawayPrice= takeawayPrice;
         this.isAvailable = isAvailable;
         this.destinationArea = destinationArea;
         this.category = category;

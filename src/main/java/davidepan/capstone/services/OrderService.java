@@ -95,6 +95,7 @@ public class OrderService {
             throw new BadRequestException("Impossibile modificare un ordine già chiuso o annullato.");
         }
 
+        boolean isTakeaway = order.getOrderType() != null && order.getOrderType().name().equalsIgnoreCase("ASPORTO");
         BigDecimal addedProductsTotal = BigDecimal.ZERO;
 
         for (OrderItemRequestDTO itemDTO : newItemsDTO) {
@@ -106,11 +107,18 @@ public class OrderService {
             }
 
             BigDecimal unitPrice = product.getPrice();
-            OrderItem orderItem = new OrderItem(order, product, itemDTO.quantity(), unitPrice, itemDTO.notes());
+            BigDecimal takeawayUnitPrice = product.getTakeawayPrice();
+
+            OrderItem orderItem = new OrderItem(order, product, itemDTO.quantity(), unitPrice, takeawayUnitPrice, itemDTO.notes());
+
+            BigDecimal activePrice = (isTakeaway && takeawayUnitPrice != null && takeawayUnitPrice.compareTo(BigDecimal.ZERO) > 0)
+                    ? takeawayUnitPrice
+                    : unitPrice;
+
 
             order.getItems().add(orderItem);
 
-            BigDecimal itemSubtotal = unitPrice.multiply(BigDecimal.valueOf(itemDTO.quantity()));
+            BigDecimal itemSubtotal = activePrice.multiply(BigDecimal.valueOf(itemDTO.quantity()));
             addedProductsTotal = addedProductsTotal.add(itemSubtotal);
         }
 
@@ -119,7 +127,6 @@ public class OrderService {
         Order updatedOrder = orderRepository.save(order);
         return convertToResponseDto(updatedOrder);
     }
-
     public OrderResponseDTO updateStatus(Long id, OrderStatusUpdateDTO body) {
         Order found = this.findEntityById(id);
         found.setOrderStatus(body.orderStatus());
@@ -157,10 +164,13 @@ public class OrderService {
                         item.getProduct() != null ? item.getProduct().getName() : null,
                         item.getQuantity(),
                         item.getUnitPrice(),
+                        item.getTakeawayUnitPrice(),
                         item.getNotes(),
                         item.getProduct() != null ? item.getProduct().getDestinationArea() : null
                 )).toList()
                 : List.of();
+
+        BigDecimal resolvedCoverPrice = order.getCoverPrice() != null ? order.getCoverPrice() : defaultCoverPrice;
 
         return new OrderResponseDTO(
                 order.getId(),
@@ -171,13 +181,16 @@ public class OrderService {
                 order.getOrderStatus(),
                 order.getNotes(),
                 order.getTotalAmount(),
-                items
+                items,
+                resolvedCoverPrice
         );
     }
 
     private void processOrderItemsAndTotal(Order order, List<OrderItemRequestDTO> itemDTOs, Integer coverCount) {
         List<OrderItem> items = new ArrayList<>();
         BigDecimal productsTotal = BigDecimal.ZERO;
+
+        boolean isTakeaway = order.getOrderType() != null && order.getOrderType().name().equalsIgnoreCase("ASPORTO");
 
         if (itemDTOs != null) {
             for (OrderItemRequestDTO itemDTO : itemDTOs) {
@@ -189,10 +202,16 @@ public class OrderService {
                 }
 
                 BigDecimal unitPrice = product.getPrice();
-                OrderItem orderItem = new OrderItem(order, product, itemDTO.quantity(), unitPrice, itemDTO.notes());
+                BigDecimal takeawayUnitPrice = product.getTakeawayPrice();
+
+                BigDecimal activePrice = (isTakeaway && takeawayUnitPrice != null && takeawayUnitPrice.compareTo(BigDecimal.ZERO) > 0)
+                        ? takeawayUnitPrice
+                        : unitPrice;
+
+                OrderItem orderItem = new OrderItem(order, product, itemDTO.quantity(), unitPrice, takeawayUnitPrice, itemDTO.notes());
                 items.add(orderItem);
 
-                BigDecimal itemSubtotal = unitPrice.multiply(BigDecimal.valueOf(itemDTO.quantity()));
+                BigDecimal itemSubtotal = activePrice.multiply(BigDecimal.valueOf(itemDTO.quantity()));
                 productsTotal = productsTotal.add(itemSubtotal);
             }
         }
@@ -204,5 +223,5 @@ public class OrderService {
 
         order.setCoverCount(actualCoverCount);
         order.setTotalAmount(productsTotal.add(totalCoverAmount));
-    }
-}
+        order.setCoverPrice(defaultCoverPrice);
+    }}
