@@ -1,10 +1,7 @@
 package davidepan.capstone.controllers;
 
 import davidepan.capstone.enums.OrderStatus;
-import davidepan.capstone.payloads.OrderItemRequestDTO;
-import davidepan.capstone.payloads.OrderRequestDTO;
-import davidepan.capstone.payloads.OrderResponseDTO;
-import davidepan.capstone.payloads.OrderStatusUpdateDTO;
+import davidepan.capstone.payloads.*;
 import davidepan.capstone.services.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -70,5 +67,15 @@ public class OrderController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteSelectedCompletedOrders(@RequestBody List<Long> ids) {
         orderService.deleteSelectedCompletedOrders(ids);
+    }
+
+    @PostMapping("/{id:\\d+}/print")
+    public List<PrintResultDTO> printOrder(@PathVariable Long id) {
+        return orderService.printOrder(id);
+    }
+
+    @PostMapping("/{id:\\d+}/print/receipt")
+    public PrintResultDTO printReceipt(@PathVariable Long id) {
+        return orderService.printReceipt(id);
     }
 }

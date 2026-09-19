@@ -18,9 +18,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class OrderService {
+
+    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
 
     @Autowired
     private OrderRepository orderRepository;
@@ -30,6 +34,9 @@ public class OrderService {
 
     @Value("${restaurant.cover-price}")
     private BigDecimal defaultCoverPrice;
+
+    @Autowired
+    private OrderPrintService orderPrintService;
 
     public Order findEntityById(Long id) {
         return orderRepository.findByIdWithDetails(id)
@@ -56,7 +63,6 @@ public class OrderService {
     @Transactional
     public OrderResponseDTO save(OrderRequestDTO body) {
         Order newOrder = new Order();
-
         newOrder.setTableNumber(body.tableNumber());
         newOrder.setOrderType(body.orderType());
         newOrder.setCoverPrice(defaultCoverPrice);
@@ -67,6 +73,13 @@ public class OrderService {
         this.processOrderItemsAndTotal(newOrder, body.items(), body.coverCount());
 
         Order savedOrder = orderRepository.save(newOrder);
+
+        try {
+            orderPrintService.printFullOrder(savedOrder);
+        } catch (Exception e) {
+            log.error("Errore inatteso durante la stampa dell'ordine {}", savedOrder.getId(), e);
+        }
+
         return convertToResponseDto(savedOrder);
     }
 
@@ -97,6 +110,7 @@ public class OrderService {
 
         boolean isTakeaway = order.getOrderType() != null && order.getOrderType().name().equalsIgnoreCase("ASPORTO");
         BigDecimal addedProductsTotal = BigDecimal.ZERO;
+        List<OrderItem> addedItems = new ArrayList<>();
 
         for (OrderItemRequestDTO itemDTO : newItemsDTO) {
             Product product = productRepository.findById(itemDTO.productId())
@@ -115,8 +129,8 @@ public class OrderService {
                     ? takeawayUnitPrice
                     : unitPrice;
 
-
             order.getItems().add(orderItem);
+            addedItems.add(orderItem);
 
             BigDecimal itemSubtotal = activePrice.multiply(BigDecimal.valueOf(itemDTO.quantity()));
             addedProductsTotal = addedProductsTotal.add(itemSubtotal);
@@ -125,8 +139,16 @@ public class OrderService {
         order.setTotalAmount(order.getTotalAmount().add(addedProductsTotal));
 
         Order updatedOrder = orderRepository.save(order);
+
+        try {
+            orderPrintService.printItems(updatedOrder, addedItems, true);
+        } catch (Exception e) {
+            log.error("Errore inatteso durante la stampa dell'integrazione per l'ordine {}", updatedOrder.getId(), e);
+        }
+
         return convertToResponseDto(updatedOrder);
     }
+
     public OrderResponseDTO updateStatus(Long id, OrderStatusUpdateDTO body) {
         Order found = this.findEntityById(id);
         found.setOrderStatus(body.orderStatus());
@@ -224,4 +246,15 @@ public class OrderService {
         order.setCoverCount(actualCoverCount);
         order.setTotalAmount(productsTotal.add(totalCoverAmount));
         order.setCoverPrice(defaultCoverPrice);
-    }}
+    }
+
+    public List<PrintResultDTO> printOrder(Long id) {
+        Order order = this.findEntityById(id);
+        return orderPrintService.printFullOrder(order);
+    }
+
+    public PrintResultDTO printReceipt(Long id) {
+        Order order = this.findEntityById(id);
+        return orderPrintService.printCustomerReceipt(order);
+    }
+}
