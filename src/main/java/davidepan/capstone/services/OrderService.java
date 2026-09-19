@@ -2,11 +2,13 @@ package davidepan.capstone.services;
 
 import davidepan.capstone.entities.Order;
 import davidepan.capstone.entities.OrderItem;
+import davidepan.capstone.entities.OrderItemExtra;
 import davidepan.capstone.entities.Product;
 import davidepan.capstone.enums.OrderStatus;
 import davidepan.capstone.exceptions.BadRequestException;
 import davidepan.capstone.exceptions.NotFoundException;
 import davidepan.capstone.payloads.*;
+import davidepan.capstone.repositories.IngredientRepository;
 import davidepan.capstone.repositories.OrderRepository;
 import davidepan.capstone.repositories.ProductRepository;
 import jakarta.transaction.Transactional;
@@ -31,6 +33,9 @@ public class OrderService {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private IngredientRepository ingredientRepository;
 
     @Value("${restaurant.cover-price}")
     private BigDecimal defaultCoverPrice;
@@ -123,7 +128,11 @@ public class OrderService {
             BigDecimal unitPrice = product.getPrice();
             BigDecimal takeawayUnitPrice = product.getTakeawayPrice();
 
+            List<OrderItemExtra> extras = resolveExtras(itemDTO.extraIngredientIds());
+            BigDecimal extrasUnitPrice = sumExtrasPrice(extras);
+
             OrderItem orderItem = new OrderItem(order, product, itemDTO.quantity(), unitPrice, takeawayUnitPrice, itemDTO.notes());
+            orderItem.setExtras(extras);
 
             BigDecimal activePrice = (isTakeaway && takeawayUnitPrice != null && takeawayUnitPrice.compareTo(BigDecimal.ZERO) > 0)
                     ? takeawayUnitPrice
@@ -132,7 +141,7 @@ public class OrderService {
             order.getItems().add(orderItem);
             addedItems.add(orderItem);
 
-            BigDecimal itemSubtotal = activePrice.multiply(BigDecimal.valueOf(itemDTO.quantity()));
+            BigDecimal itemSubtotal = activePrice.add(extrasUnitPrice).multiply(BigDecimal.valueOf(itemDTO.quantity()));
             addedProductsTotal = addedProductsTotal.add(itemSubtotal);
         }
 
@@ -188,7 +197,12 @@ public class OrderService {
                         item.getUnitPrice(),
                         item.getTakeawayUnitPrice(),
                         item.getNotes(),
-                        item.getProduct() != null ? item.getProduct().getDestinationArea() : null
+                        item.getProduct() != null ? item.getProduct().getDestinationArea() : null,
+                        item.getExtras() != null
+                        ? item.getExtras().stream()
+                                .map(e -> new OrderItemExtraResponseDTO(e.getIngredientName(), e.getPrice()))
+                                .toList()
+                        : List.of()
                 )).toList()
                 : List.of();
 
@@ -230,10 +244,14 @@ public class OrderService {
                         ? takeawayUnitPrice
                         : unitPrice;
 
+                List<OrderItemExtra> extras = resolveExtras(itemDTO.extraIngredientIds());
+                BigDecimal extrasUnitPrice = sumExtrasPrice(extras);
+
                 OrderItem orderItem = new OrderItem(order, product, itemDTO.quantity(), unitPrice, takeawayUnitPrice, itemDTO.notes());
+                orderItem.setExtras(extras);
                 items.add(orderItem);
 
-                BigDecimal itemSubtotal = activePrice.multiply(BigDecimal.valueOf(itemDTO.quantity()));
+                BigDecimal itemSubtotal = activePrice.add(extrasUnitPrice).multiply(BigDecimal.valueOf(itemDTO.quantity()));
                 productsTotal = productsTotal.add(itemSubtotal);
             }
         }
@@ -246,6 +264,25 @@ public class OrderService {
         order.setCoverCount(actualCoverCount);
         order.setTotalAmount(productsTotal.add(totalCoverAmount));
         order.setCoverPrice(defaultCoverPrice);
+    }
+
+
+
+    private List<OrderItemExtra> resolveExtras(List<Long> extraIngredientIds) {
+        if (extraIngredientIds == null || extraIngredientIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>(extraIngredientIds.stream()
+                .map(ingredientId -> ingredientRepository.findById(ingredientId)
+                        .orElseThrow(() -> new NotFoundException("Ingrediente extra con ID " + ingredientId + " non trovato")))
+                .map(ingredient -> new OrderItemExtra(ingredient.getId(), ingredient.getName(), ingredient.getExtraPrice()))
+                .toList());
+    }
+
+    private BigDecimal sumExtrasPrice(List<OrderItemExtra> extras) {
+        return extras.stream()
+                .map(OrderItemExtra::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public List<PrintResultDTO> printOrder(Long id) {

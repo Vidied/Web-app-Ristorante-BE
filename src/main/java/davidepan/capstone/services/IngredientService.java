@@ -19,8 +19,8 @@ public class IngredientService {
     @Autowired
     private IngredientRepository ingredientRepository;
 
-     @Autowired
-     private ProductRepository productRepository;
+    @Autowired
+    private ProductRepository productRepository;
 
     public List<Ingredient> findAll(){
         return ingredientRepository.findAll();
@@ -32,7 +32,9 @@ public class IngredientService {
     }
 
     public Ingredient save(IngredientDTO body){
-        Ingredient ingredient = new Ingredient(body.name());
+        Ingredient ingredient = (body.extraPrice() != null)
+                ? new Ingredient(body.name(), body.extraPrice())
+                : new Ingredient(body.name());
 
         if (body.isAvailable() != null){
             ingredient.setIsAvailable(body.isAvailable());
@@ -50,6 +52,10 @@ public class IngredientService {
 
         if(body.isAvailable() != null) {
             found.setIsAvailable(body.isAvailable());
+        }
+
+        if(body.extraPrice() != null) {
+            found.setExtraPrice(body.extraPrice());
         }
 
         Ingredient savedIngredient = ingredientRepository.save(found);

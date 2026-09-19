@@ -75,7 +75,7 @@ public class DataSeeder implements CommandLineRunner {
                 "Burrata", "Stracciata di bufala DOP", "Ventricina piccante", "Salsiccia in arrosto", "Carciofini all'olio",
                 "Prosciutto cotto", "Funghi freschi tagliati a mano", "Gorgonzola", "Friarielli", "Provola", "Tonno",
                 "Cipolla rossa", "Patate", "Prosciutto crudo", "Rucola", "Wurstel", "Verdure grigliate", "Funghi champignon",
-                "Scarola", "Cigoli", "Pomodorino rosso ciliegino", "Alici di Cetara", "Tarallo 'n sugna e pepe extra mandorlato",
+                "Scarola", "Cigoli", "Pomodorino rosso ciliegino", "Tarallo 'n sugna e pepe extra mandorlato",
                 "Ragù di carne mista", "Succo di limone", "Zeste di limone", "Mais", "'Nduja", "Melanzane", "Sugo polpette",
                 "Polpette", "Grana", "Parmigiano", "Uovo", "Crema alla genovese", "Crema di carciofi", "Guanciale",
                 "Carbo crema", "Cacio e pepe", "Funghi porcini", "Melanzana al funghetto", "Prezzemolo", "Patatine",
@@ -85,6 +85,20 @@ public class DataSeeder implements CommandLineRunner {
         for (String name : ingredientNames) {
             ing.put(name, ingredientRepository.save(new Ingredient(name)));
         }
+
+        for (String name : ingredientNames) {
+            ing.put(name, ingredientRepository.save(new Ingredient(name)));
+        }
+
+
+        ing.get("Alici").setExtraPrice(new BigDecimal("2.00"));
+        ingredientRepository.save(ing.get("Alici"));
+        ing.get("Alici di Cetara").setExtraPrice(new BigDecimal("2.00"));
+        ingredientRepository.save(ing.get("Alici di Cetara"));
+
+        ingredientRepository.save(new Ingredient("Ruota di Carro", new BigDecimal("1.00")));
+        ingredientRepository.save(new Ingredient("Ruotiello", new BigDecimal("2.00")));
+        ingredientRepository.save(new Ingredient("Baby", new BigDecimal("-1.00")));
 
         productRepository.save(new Product(
                 "Margherita", null, new BigDecimal("10.00"), new BigDecimal("8.00"), true,

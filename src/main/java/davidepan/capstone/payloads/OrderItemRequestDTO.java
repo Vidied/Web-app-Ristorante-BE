@@ -3,6 +3,8 @@ package davidepan.capstone.payloads;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
+import java.util.List;
+
 public record OrderItemRequestDTO(
         @NotNull(message = "L'ID del prodotto è obbligatorio")
         Long productId,
@@ -11,6 +13,8 @@ public record OrderItemRequestDTO(
         @Min(value = 1, message = "Quantità minima 1")
         Integer quantity,
 
-        String notes
+        String notes,
+
+        List<Long> extraIngredientIds
 ) {
 }

@@ -2,6 +2,7 @@ package davidepan.capstone.printing;
 
 import davidepan.capstone.entities.Order;
 import davidepan.capstone.entities.OrderItem;
+import davidepan.capstone.entities.OrderItemExtra;
 import davidepan.capstone.enums.DestinationArea;
 import davidepan.capstone.enums.OrderType;
 import org.springframework.stereotype.Component;
@@ -52,6 +53,12 @@ public class OrderReceiptBuilder {
             b.characterSize(2, 2).bold(true)
                     .text(item.getQuantity() + "x " + item.getProduct().getName())
                     .resetCharacterSize().bold(false).newLine();
+
+            if (item.getExtras() != null) {
+                for (OrderItemExtra extra : item.getExtras()) {
+                    b.text("   > " + extra.getIngredientName()).newLine();
+                }
+            }
             if (item.getNotes() != null && !item.getNotes().isBlank()) {
                 b.text("   Nota: " + item.getNotes()).newLine();
             }
@@ -89,6 +96,13 @@ public class OrderReceiptBuilder {
             BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
             String label = item.getQuantity() + "x " + item.getProduct().getName();
             b.text(formatLine(label, lineTotal)).newLine();
+
+            if (item.getExtras() != null) {
+                for (OrderItemExtra extra : item.getExtras()) {
+                    BigDecimal extraTotal = extra.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+                    b.text(formatLine("  " + extra.getIngredientName(), extraTotal)).newLine();
+                }
+            }
         }
 
         if (!isTakeaway && order.getCoverCount() != null && order.getCoverCount() > 0) {
@@ -124,10 +138,8 @@ public class OrderReceiptBuilder {
         return "-".repeat(left) + " " + label + " " + "-".repeat(right);
     }
 
-
-
     private void appendNotesBox(EscPosCommandBuilder b, String notes) {
-        int innerWidth = LINE_WIDTH - 4; // "| " + contenuto + " |"
+        int innerWidth = LINE_WIDTH - 4;
         String border = "+" + "-".repeat(LINE_WIDTH - 2) + "+";
 
         b.text(border).newLine();
@@ -143,8 +155,6 @@ public class OrderReceiptBuilder {
         String padded = String.format("%-" + innerWidth + "s", truncate(content, innerWidth));
         return "| " + padded + " |";
     }
-
-
 
     private List<String> wrapText(String text, int width) {
         List<String> lines = new ArrayList<>();
