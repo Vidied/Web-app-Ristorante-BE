@@ -42,8 +42,8 @@ public class OrderController {
     }
 
     @PostMapping("/{id:\\d+}/items")
-    public OrderResponseDTO appendItemsToOrder(@PathVariable Long id, @RequestBody @Validated List<OrderItemRequestDTO> items) {
-        return orderService.appendItems(id, items);
+    public OrderResponseDTO appendItemsToOrder(@PathVariable Long id, @RequestBody @Validated AppendItemsRequestDTO body) {
+        return orderService.appendItems(id, body.items(), body.coverCount());
     }
 
     @PatchMapping("/{id:\\d+}/status")
@@ -67,6 +67,18 @@ public class OrderController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteSelectedCompletedOrders(@RequestBody List<Long> ids) {
         orderService.deleteSelectedCompletedOrders(ids);
+    }
+
+    @DeleteMapping("/cancelled/all")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAllCancelledOrders() {
+        orderService.deleteAllCancelledOrders();
+    }
+
+    @DeleteMapping("/cancelled/batch")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSelectedCancelledOrders(@RequestBody List<Long> ids) {
+        orderService.deleteSelectedCancelledOrders(ids);
     }
 
     @PostMapping("/{id:\\d+}/print")

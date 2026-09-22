@@ -79,12 +79,8 @@ public class DataSeeder implements CommandLineRunner {
                 "Ragù di carne mista", "Succo di limone", "Zeste di limone", "Mais", "'Nduja", "Melanzane", "Sugo polpette",
                 "Polpette", "Grana", "Parmigiano", "Uovo", "Crema alla genovese", "Crema di carciofi", "Guanciale",
                 "Carbo crema", "Cacio e pepe", "Funghi porcini", "Melanzana al funghetto", "Prezzemolo", "Patatine",
-                "Datterino rosso", "Olive", "Pomodorini pachino", "Ananas", "Funghi"
+                "Datterino rosso", "Olive", "Pomodorini pachino", "Ananas", "Funghi","Alici di Cetara"
         };
-
-        for (String name : ingredientNames) {
-            ing.put(name, ingredientRepository.save(new Ingredient(name)));
-        }
 
         for (String name : ingredientNames) {
             ing.put(name, ingredientRepository.save(new Ingredient(name)));

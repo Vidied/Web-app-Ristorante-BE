@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 public class EscPosCommandBuilder {
     private static final Charset PRINTER_CHARSET = Charset.forName("CP437");
     private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    private int lineCount = 0;
 
     public EscPosCommandBuilder init() {
         write(0x1B, 0x40);
@@ -37,16 +38,6 @@ public class EscPosCommandBuilder {
         return this;
     }
 
-    private void write(int... bytes) {
-        for (int b : bytes) buffer.write(b);
-    }
-
-    public byte[] build() {
-        return buffer.toByteArray();
-    }
-
-    private int lineCount = 0;
-
     public EscPosCommandBuilder newLine() {
         write(0x0A);
         lineCount++;
@@ -70,5 +61,25 @@ public class EscPosCommandBuilder {
             newLine();
         }
         return this;
+    }
+
+    public EscPosCommandBuilder beep(int times, int duration) {
+        int safeTimes = Math.clamp(times, 1, 9);
+        int safeDuration = Math.clamp(duration, 1, 9);
+
+        write(0x1B, 0x42, safeTimes, safeDuration);
+        return this;
+    }
+
+    public EscPosCommandBuilder beep() {
+        return beep(2, 2);
+    }
+
+    private void write(int... bytes) {
+        for (int b : bytes) buffer.write(b);
+    }
+
+    public byte[] build() {
+        return buffer.toByteArray();
     }
 }

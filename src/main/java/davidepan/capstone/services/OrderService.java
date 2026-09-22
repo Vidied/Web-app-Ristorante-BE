@@ -106,7 +106,7 @@ public class OrderService {
 
     // Aggiunta di nuovi prodotti a un ordine esistente
     @Transactional
-    public OrderResponseDTO appendItems(Long orderId, List<OrderItemRequestDTO> newItemsDTO) {
+    public OrderResponseDTO appendItems(Long orderId, List<OrderItemRequestDTO> newItemsDTO, Integer newCoverCount) {
         Order order = this.findEntityById(orderId);
 
         if (order.getOrderStatus() == OrderStatus.COMPLETED || order.getOrderStatus() == OrderStatus.CANCELLED) {
@@ -133,6 +133,9 @@ public class OrderService {
 
             OrderItem orderItem = new OrderItem(order, product, itemDTO.quantity(), unitPrice, takeawayUnitPrice, itemDTO.notes());
             orderItem.setExtras(extras);
+            orderItem.setRemovedIngredients(
+                    itemDTO.removedIngredientNames() != null ? itemDTO.removedIngredientNames() : new ArrayList<>()
+            );
 
             BigDecimal activePrice = (isTakeaway && takeawayUnitPrice != null && takeawayUnitPrice.compareTo(BigDecimal.ZERO) > 0)
                     ? takeawayUnitPrice
@@ -145,7 +148,17 @@ public class OrderService {
             addedProductsTotal = addedProductsTotal.add(itemSubtotal);
         }
 
-        order.setTotalAmount(order.getTotalAmount().add(addedProductsTotal));
+        BigDecimal newTotal = order.getTotalAmount().add(addedProductsTotal);
+
+        if (newCoverCount != null && !newCoverCount.equals(order.getCoverCount())) {
+            BigDecimal coverPrice = order.getCoverPrice() != null ? order.getCoverPrice() : defaultCoverPrice;
+            int previousCoverCount = order.getCoverCount() != null ? order.getCoverCount() : 0;
+            BigDecimal coverDelta = coverPrice.multiply(BigDecimal.valueOf(newCoverCount - previousCoverCount));
+            newTotal = newTotal.add(coverDelta);
+            order.setCoverCount(newCoverCount);
+        }
+
+        order.setTotalAmount(newTotal);
 
         Order updatedOrder = orderRepository.save(order);
 
@@ -182,6 +195,22 @@ public class OrderService {
     }
 
     @Transactional
+    public void deleteAllCancelledOrders() {
+        List<Order> cancelledOrders = orderRepository.findByOrderStatusWithDetails(OrderStatus.CANCELLED);
+        orderRepository.deleteAll(cancelledOrders);
+    }
+
+    @Transactional
+    public void deleteSelectedCancelledOrders(List<Long> ids) {
+        if (ids != null && !ids.isEmpty()) {
+            List<Order> ordersToDelete = orderRepository.findAllById(ids).stream()
+                    .filter(o -> o.getOrderStatus() == OrderStatus.CANCELLED)
+                    .toList();
+            orderRepository.deleteAll(ordersToDelete);
+        }
+    }
+
+    @Transactional
     public void delete(Long id) {
         Order found = this.findEntityById(id);
         orderRepository.delete(found);
@@ -202,7 +231,8 @@ public class OrderService {
                         ? item.getExtras().stream()
                                 .map(e -> new OrderItemExtraResponseDTO(e.getIngredientName(), e.getPrice()))
                                 .toList()
-                        : List.of()
+                        : List.of(),
+                        item.getRemovedIngredients() != null ? item.getRemovedIngredients() : List.of()
                 )).toList()
                 : List.of();
 
@@ -249,6 +279,9 @@ public class OrderService {
 
                 OrderItem orderItem = new OrderItem(order, product, itemDTO.quantity(), unitPrice, takeawayUnitPrice, itemDTO.notes());
                 orderItem.setExtras(extras);
+                orderItem.setRemovedIngredients(
+                        itemDTO.removedIngredientNames() != null ? itemDTO.removedIngredientNames() : new ArrayList<>()
+                );
                 items.add(orderItem);
 
                 BigDecimal itemSubtotal = activePrice.add(extrasUnitPrice).multiply(BigDecimal.valueOf(itemDTO.quantity()));

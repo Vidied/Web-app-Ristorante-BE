@@ -12,5 +12,6 @@ public record OrderItemResponseDTO(
         BigDecimal takeawayUnitPrice,
         String notes,
         DestinationArea destinationArea,
-        List<OrderItemExtraResponseDTO> extras
+        List<OrderItemExtraResponseDTO> extras,
+        List<String> removedIngredients
 ) {}

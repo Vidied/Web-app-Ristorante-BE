@@ -56,13 +56,23 @@ public class OrderReceiptBuilder {
 
             if (item.getExtras() != null) {
                 for (OrderItemExtra extra : item.getExtras()) {
-                    b.text("   > " + extra.getIngredientName()).newLine();
+                    String sign = extra.getPrice().signum() < 0 ? "- " : "+ ";
+                    b.text("   " + sign)
+                            .bold(true).text(extra.getIngredientName()).bold(false)
+                            .newLine();
                 }
             }
             if (item.getNotes() != null && !item.getNotes().isBlank()) {
                 b.text("   Nota: " + item.getNotes()).newLine();
             }
+            if (item.getRemovedIngredients() != null) {
+                for (String removed : item.getRemovedIngredients()) {
+                    b.text("   NO ").bold(true).text(removed).bold(false).newLine();
+                }
+            }
         }
+
+        b.beep(3, 2);
 
         b.padToMinimumLines(MIN_TICKET_LINES);
         b.feed(FEED_BEFORE_CUT).cut();
@@ -76,9 +86,9 @@ public class OrderReceiptBuilder {
                 .text("SCONTRINO").newLine()
                 .doubleHeight(false).bold(false).alignLeft();
 
-        b.text("Ordine #" + order.getId());
+       // b.text("Ordine #" + order.getId());
         if (order.getTableNumber() != null) {
-            b.text(" - Tavolo " + order.getTableNumber());
+            b.text("Tavolo " + order.getTableNumber());
         }
         b.newLine();
         b.text(order.getOrderType() != null ? order.getOrderType().name() : "").newLine();
@@ -100,7 +110,12 @@ public class OrderReceiptBuilder {
             if (item.getExtras() != null) {
                 for (OrderItemExtra extra : item.getExtras()) {
                     BigDecimal extraTotal = extra.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-                    b.text(formatLine("  " + extra.getIngredientName(), extraTotal)).newLine();
+                    b.text(formatLine("  + " + extra.getIngredientName(), extraTotal)).newLine();
+                }
+            }
+            if (item.getRemovedIngredients() != null) {
+                for (String removed : item.getRemovedIngredients()) {
+                    b.text("  (senza " + removed + ")").newLine();
                 }
             }
         }
@@ -118,6 +133,17 @@ public class OrderReceiptBuilder {
         b.text(formatLine("TOTALE", order.getTotalAmount())).newLine();
         b.bold(false);
 
+        b.text(SEPARATOR).newLine();
+        b.newLine();
+        b.alignCenter().bold(true);
+        b.text("GRAZIE E ARRIVEDERCI").newLine();
+        b.bold(false).alignLeft();
+
+
+        b.padToMinimumLines(MIN_TICKET_LINES);
+
+
+        b.beep(1, 1);
         b.feed(FEED_BEFORE_CUT).cut();
         return b.build();
     }

@@ -1,6 +1,7 @@
 package davidepan.capstone.printing;
 
 import davidepan.capstone.enums.DestinationArea;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,9 +21,12 @@ public class PrinterConfig {
     }
 
     @Bean
-    public SystemPrinterConnection cucinaPrinterConnection(
-            @Value("${printer.cucina.name}") String name) {
-        return new SystemPrinterConnection(name);
+    public SerialPrinterConnection cucinaPrinterConnection(
+            @Value("${printer.cucina.port}") String port,
+            @Value("${printer.cucina.name-hint}") String nameHint,
+            @Value("${printer.cucina.max-retries:3}") int maxRetries,
+            @Value("${printer.cucina.retry-delay-ms:1500}") long retryDelayMillis) {
+        return new SerialPrinterConnection(port, nameHint, maxRetries, retryDelayMillis);
     }
 
     @Bean
@@ -33,8 +37,8 @@ public class PrinterConfig {
 
     @Bean
     public Map<DestinationArea, PrinterConnection> printerConnections(
-            SerialPrinterConnection pizzeriaPrinterConnection,
-            SystemPrinterConnection cucinaPrinterConnection,
+            @Qualifier("pizzeriaPrinterConnection") SerialPrinterConnection pizzeriaPrinterConnection,
+            @Qualifier("cucinaPrinterConnection") SerialPrinterConnection cucinaPrinterConnection,
             SystemPrinterConnection salaPrinterConnection) {
         return Map.of(
                 DestinationArea.PIZZERIA, pizzeriaPrinterConnection,

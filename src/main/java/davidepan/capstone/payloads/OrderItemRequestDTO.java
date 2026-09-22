@@ -15,6 +15,8 @@ public record OrderItemRequestDTO(
 
         String notes,
 
-        List<Long> extraIngredientIds
+        List<Long> extraIngredientIds,
+
+        List<String> removedIngredientNames
 ) {
 }

@@ -46,6 +46,11 @@ public class OrderItem {
     @CollectionTable(name = "order_item_extras", joinColumns = @JoinColumn(name = "order_item_id"))
     private List<OrderItemExtra> extras = new ArrayList<>();
 
+    @ElementCollection
+    @CollectionTable(name = "order_item_removed_ingredients", joinColumns = @JoinColumn(name = "order_item_id"))
+    @Column(name = "ingredient_name")
+    private List<String> removedIngredients = new ArrayList<>();
+
     public OrderItem(Order order, Product product, Integer quantity, BigDecimal unitPrice, BigDecimal takeawayUnitPrice, String notes) {
         this.order = order;
         this.product = product;
