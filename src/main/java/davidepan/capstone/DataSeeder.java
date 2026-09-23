@@ -1,6 +1,7 @@
 package davidepan.capstone;
 
 import davidepan.capstone.entities.*;
+import davidepan.capstone.enums.Allergen;
 import davidepan.capstone.enums.DestinationArea;
 import davidepan.capstone.enums.OrderStatus;
 import davidepan.capstone.repositories.*;
@@ -12,11 +13,23 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Seeder dei dati dimostrativi (admin, menu con allergeni, ordine di esempio).
+ *
+ * COME RIPARTIRE DA UN DB PULITO CON UN SINGOLO AVVIO:
+ *   1. in application.properties imposta  spring.jpa.hibernate.ddl-auto=create-drop
+ *   2. avvia l'app UNA volta: Hibernate droppa/ricrea lo schema e questo seeder ripopola tutto
+ *   3. rimetti  spring.jpa.hibernate.ddl-auto=update  e riavvia normalmente
+ *
+ * Grazie alle guardie (count/email) è idempotente: con ddl-auto=update NON duplica i dati.
+ */
 @Component
+@org.springframework.core.annotation.Order(2) // eseguito DOPO RoleSeeder; FQN per evitare conflitto con entities.Order
 public class DataSeeder implements CommandLineRunner {
 
     @Autowired
@@ -59,7 +72,7 @@ public class DataSeeder implements CommandLineRunner {
             return;
         }
 
-        Category catMargherite = categoryRepository.save(new Category("Le Nostre Margherite", 1));
+                Category catMargherite = categoryRepository.save(new Category("Le Nostre Margherite", 1));
         Category catMarinare = categoryRepository.save(new Category("Le Nostre Marinare", 2));
         Category catClassiche = categoryRepository.save(new Category("Le Nostre Pizze Classiche", 3));
         Category catSpeciali = categoryRepository.save(new Category("Le Pizze Speciali", 4));
@@ -96,539 +109,350 @@ public class DataSeeder implements CommandLineRunner {
         ingredientRepository.save(new Ingredient("Ruotiello", new BigDecimal("2.00")));
         ingredientRepository.save(new Ingredient("Baby", new BigDecimal("-1.00")));
 
-        productRepository.save(new Product(
-                "Margherita", null, new BigDecimal("10.00"), new BigDecimal("8.00"), true,
-                DestinationArea.PIZZERIA, catMargherite,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Basilico napoletano"), ing.get("Pecorino"), ing.get("Olio"))
-        ));
+                Product margheritaRef = saveProduct("Margherita", null, "10.00", "8.00", catMargherite, ing,
+                        Set.of("Fior di latte d'Agerola", "Pomodoro San Marzano schiacciato a mano", "Basilico napoletano", "Pecorino", "Olio"),
+                        Set.of(Allergen.GLUTINE, Allergen.LATTE));
 
-        productRepository.save(new Product(
-                "Bufala", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catMargherite,
-                Set.of(ing.get("Bufala DOC"), ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
+        saveProduct("Bufala", null, "13.00", "11.00", catMargherite, ing,
+                Set.of("Bufala DOC", "Pomodoro San Marzano schiacciato a mano", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
 
-        productRepository.save(new Product(
-                "Margherita del Perdono", null, new BigDecimal("16.00"), new BigDecimal("14.00"), true,
-                DestinationArea.PIZZERIA, catMargherite,
-                Set.of(ing.get("Crema da condimento al formaggio"), ing.get("Ragù"), ing.get("Olio all'aglio"), ing.get("Peperoncino"), ing.get("Basilico napoletano"), ing.get("Pepe nero"), ing.get("Provola affumicata DOC"), ing.get("Olio"))
-        ));
+                saveProduct("Margherita del Perdono", null, "16.00", "14.00", catMargherite, ing,
+                Set.of("Crema da condimento al formaggio", "Ragù", "Olio all'aglio", "Peperoncino", "Basilico napoletano", "Pepe nero", "Provola affumicata DOC", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE, Allergen.SEDANO));
 
-        productRepository.save(new Product(
-                "Margherita Gold and Lady", null, new BigDecimal("11.50"), new BigDecimal("9.50"), true,
-                DestinationArea.PIZZERIA, catMargherite,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Datterino del piennolo giallo"), ing.get("Basilico napoletano"), ing.get("Pecorino"), ing.get("Olio"))
-        ));
+        saveProduct("Margherita Gold and Lady", null, "11.50", "9.50", catMargherite, ing,
+                Set.of("Fior di latte d'Agerola", "Datterino del piennolo giallo", "Basilico napoletano", "Pecorino", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
 
-        productRepository.save(new Product(
-                "Bufala Gold", null, new BigDecimal("14.00"), new BigDecimal("12.00"), true,
-                DestinationArea.PIZZERIA, catMargherite,
-                Set.of(ing.get("Bufala DOC"), ing.get("Datterino del piennolo giallo"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
+        saveProduct("Bufala Gold", null, "14.00", "12.00", catMargherite, ing,
+                Set.of("Bufala DOC", "Datterino del piennolo giallo", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
 
-        productRepository.save(new Product(
-                "Cosacca (Margherita dei Poveri)", null, new BigDecimal("8.50"), new BigDecimal("6.50"), true,
-                DestinationArea.PIZZERIA, catMargherite,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Basilico napoletano"), ing.get("Pecorino"), ing.get("Olio"))
-        ));
+        saveProduct("Cosacca (Margherita dei Poveri)", null, "8.50", "6.50", catMargherite, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Basilico napoletano", "Pecorino", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
 
-        productRepository.save(new Product(
-                "Margherita White Passion", null, new BigDecimal("11.00"), new BigDecimal("9.00"), true,
-                DestinationArea.PIZZERIA, catMargherite,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Basilico napoletano"), ing.get("Pecorino"), ing.get("Olio"))
-        ));
+        saveProduct("Margherita White Passion", null, "11.00", "9.00", catMargherite, ing,
+                Set.of("Fior di latte d'Agerola", "Pomodoro San Marzano schiacciato a mano", "Basilico napoletano", "Pecorino", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
 
-        productRepository.save(new Product(
-                "Margherita Giallo Rosso", null, new BigDecimal("11.50"), new BigDecimal("9.50"), true,
-                DestinationArea.PIZZERIA, catMargherite,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Datterino del piennolo giallo"), ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Basilico napoletano"), ing.get("Pecorino"), ing.get("Olio"))
-        ));
+        saveProduct("Margherita Giallo Rosso", null, "11.50", "9.50", catMargherite, ing,
+                Set.of("Fior di latte d'Agerola", "Datterino del piennolo giallo", "Pomodoro San Marzano schiacciato a mano", "Basilico napoletano", "Pecorino", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
 
-        productRepository.save(new Product(
-                "La Marinara (Campione del Mondo)", null, new BigDecimal("8.50"), new BigDecimal("6.50"), true,
-                DestinationArea.PIZZERIA, catMarinare,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Aglio"), ing.get("Basilico napoletano"), ing.get("Olio"), ing.get("Origano"))
-        ));
+                saveProduct("La Marinara (Campione del Mondo)", null, "8.50", "6.50", catMarinare, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Aglio", "Basilico napoletano", "Olio", "Origano"),
+                Set.of(Allergen.GLUTINE));
 
-        productRepository.save(new Product(
-                "La Marinara Gold (Pizzaiolo dell'Anno)", null, new BigDecimal("9.50"), new BigDecimal("7.50"), true,
-                DestinationArea.PIZZERIA, catMarinare,
-                Set.of(ing.get("Datterino del piennolo giallo"), ing.get("Aglio"), ing.get("Basilico napoletano"), ing.get("Olio"), ing.get("Origano"))
-        ));
+        saveProduct("La Marinara Gold (Pizzaiolo dell'Anno)", null, "9.50", "7.50", catMarinare, ing,
+                Set.of("Datterino del piennolo giallo", "Aglio", "Basilico napoletano", "Olio", "Origano"),
+                Set.of(Allergen.GLUTINE));
 
-        productRepository.save(new Product(
-                "La Marinara De Dios", null, new BigDecimal("12.00"), new BigDecimal("10.00"), true,
-                DestinationArea.PIZZERIA, catMarinare,
-                Set.of(ing.get("Datterino del piennolo giallo"), ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Crema da condimento al formaggio"), ing.get("Aglio"), ing.get("Origano"), ing.get("Olio"))
-        ));
+        saveProduct("La Marinara De Dios", null, "12.00", "10.00", catMarinare, ing,
+                Set.of("Datterino del piennolo giallo", "Pomodoro San Marzano schiacciato a mano", "Crema da condimento al formaggio", "Aglio", "Origano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
 
-        productRepository.save(new Product(
-                "La Marinara della Signora \"Petrillo\"", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catMarinare,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Basilico napoletano"), ing.get("Datterino rosso"), ing.get("Aglio"), ing.get("Alici"), ing.get("Olive nere"), ing.get("Origano"), ing.get("Olio"))
-        ));
+        saveProduct("La Marinara della Signora \"Petrillo\"", null, "13.00", "11.00", catMarinare, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Basilico napoletano", "Datterino rosso", "Aglio", "Alici", "Olive nere", "Origano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.PESCE));
 
-        productRepository.save(new Product(
-                "Marinara Sbagliata", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catMarinare,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Bufala DOC"), ing.get("Aglio"), ing.get("Basilico napoletano"), ing.get("Olio"), ing.get("Origano"))
-        ));
+        saveProduct("Marinara Sbagliata", null, "13.00", "11.00", catMarinare, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Bufala DOC", "Aglio", "Basilico napoletano", "Olio", "Origano"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
 
-        productRepository.save(new Product(
-                "Marinara \"a bella mia\"", null, new BigDecimal("10.00"), new BigDecimal("8.00"), true,
-                DestinationArea.PIZZERIA, catMarinare,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Aglio"), ing.get("Datterino del piennolo giallo"), ing.get("Basilico napoletano"), ing.get("Olio"), ing.get("Origano"))
-        ));
+        saveProduct("Marinara \"a bella mia\"", null, "10.00", "8.00", catMarinare, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Aglio", "Datterino del piennolo giallo", "Basilico napoletano", "Olio", "Origano"),
+                Set.of(Allergen.GLUTINE));
 
-        productRepository.save(new Product(
-                "Marinara Shock", "Vincitrice premio speciale con alici e burrata in uscita", new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catMarinare,
-                Set.of(ing.get("Datterino del piennolo giallo"), ing.get("Olio"), ing.get("Aglio"), ing.get("Basilico napoletano"), ing.get("Origano"), ing.get("Alici"), ing.get("Burrata"))
-        ));
+        saveProduct("Marinara Shock", "Vincitrice premio speciale con alici e burrata in uscita", "15.00", "13.00", catMarinare, ing,
+                Set.of("Datterino del piennolo giallo", "Olio", "Aglio", "Basilico napoletano", "Origano", "Alici", "Burrata"),
+                Set.of(Allergen.GLUTINE, Allergen.PESCE, Allergen.LATTE));
 
         // LE NOSTRE PIZZE CLASSICHE
-        productRepository.save(new Product(
-                "La Napoli", null, new BigDecimal("12.00"), new BigDecimal("10.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Alici"), ing.get("Fior di latte d'Agerola"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Salame Piccante", null, new BigDecimal("12.00"), new BigDecimal("10.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Ventricina piccante"), ing.get("Basilico napoletano"), ing.get("Olio"), ing.get("Fior di latte d'Agerola"))
-        ));
-
-        productRepository.save(new Product(
-                "La Quattro Stagioni", null, new BigDecimal("14.00"), new BigDecimal("12.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Salsiccia in arrosto"), ing.get("Carciofini all'olio"), ing.get("Prosciutto cotto"), ing.get("Funghi freschi tagliati a mano"), ing.get("Fior di latte d'Agerola"), ing.get("Olio"), ing.get("Basilico napoletano"))
-        ));
-
-        productRepository.save(new Product(
-                "La Quattro Formaggi", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Bufala DOC"), ing.get("Pecorino"), ing.get("Crema da condimento al formaggio"), ing.get("Gorgonzola"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Capricciosa", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Salsiccia in arrosto"), ing.get("Carciofini all'olio"), ing.get("Prosciutto cotto"), ing.get("Funghi freschi tagliati a mano"), ing.get("Olive nere"), ing.get("Basilico napoletano"), ing.get("Olio"), ing.get("Fior di latte d'Agerola"))
-        ));
-
-        productRepository.save(new Product(
-                "La Salsiccia e Friarielli", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Friarielli"), ing.get("Salsiccia in arrosto"), ing.get("Basilico napoletano"), ing.get("Pecorino"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "Salsiccia e Friarelli alla Casertana", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Friarielli"), ing.get("Salsiccia in arrosto"), ing.get("Provola"), ing.get("Basilico napoletano"), ing.get("Pecorino"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Tonno e Cipolla", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Fior di latte d'Agerola"), ing.get("Tonno"), ing.get("Cipolla rossa"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Patate e Salsiccia", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Fior di latte d'Agerola"), ing.get("Patate"), ing.get("Salsiccia in arrosto"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Funghi e Salsiccia", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Funghi freschi tagliati a mano"), ing.get("Salsiccia in arrosto"), ing.get("Fior di latte d'Agerola"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Biancaneve", null, new BigDecimal("14.00"), new BigDecimal("12.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Pomodorini pachino"), ing.get("Basilico napoletano"), ing.get("Prosciutto crudo"), ing.get("Rucola"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "L'Americana", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Wurstel"), ing.get("Patate"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Vegetariana", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Verdure grigliate"), ing.get("Fior di latte d'Agerola"), ing.get("Olio"), ing.get("Basilico napoletano"))
-        ));
-
-        productRepository.save(new Product(
-                "La Funghi e Crudo", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Funghi champignon"), ing.get("Basilico napoletano"), ing.get("Prosciutto crudo"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Funghi e Cotto", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Funghi champignon"), ing.get("Basilico napoletano"), ing.get("Prosciutto cotto"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Scarola", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Scarola"), ing.get("Alici"), ing.get("Olive"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Provola e Pepe", null, new BigDecimal("12.00"), new BigDecimal("10.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Provola affumicata DOC"), ing.get("Pepe nero"), ing.get("Fior di latte d'Agerola"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Provola e Pepe + Cigoli", null, new BigDecimal("14.50"), new BigDecimal("12.50"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Provola affumicata DOC"), ing.get("Pepe nero"), ing.get("Fior di latte d'Agerola"), ing.get("Cigoli"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Provola e Pepe White Passion", null, new BigDecimal("12.00"), new BigDecimal("10.00"), true,
-                DestinationArea.PIZZERIA, catClassiche,
-                Set.of(ing.get("Crema da condimento al formaggio"), ing.get("Provola affumicata DOC"), ing.get("Pepe nero"), ing.get("Fior di latte d'Agerola"), ing.get("Cigoli"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Datterina", "Pizza speciale con datterino giallo, alici di Cetara e bufala DOP", new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Bufala DOC"), ing.get("Pomodorino rosso ciliegino"), ing.get("Datterino del piennolo giallo"), ing.get("Alici di Cetara"), ing.get("Aglio"), ing.get("Olio"), ing.get("Basilico napoletano"))
-        ));
-
-        productRepository.save(new Product(
-                "La Pugliese", null, new BigDecimal("14.00"), new BigDecimal("12.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Friarielli"), ing.get("Pomodorini pachino"), ing.get("Alici di Cetara"), ing.get("Olive"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Rustica", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Funghi"), ing.get("Grana"), ing.get("Aglio"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Nordica", null, new BigDecimal("14.00"), new BigDecimal("12.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Datterino del piennolo giallo"), ing.get("Cipolla rossa"), ing.get("Gorgonzola"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Zozzona", "Golosità della casa con crema al formaggio, gorgonzola e patate", new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Crema da condimento al formaggio"), ing.get("Ventricina piccante"), ing.get("Basilico napoletano"), ing.get("Patate"), ing.get("Gorgonzola"), ing.get("Olio"), ing.get("Fior di latte d'Agerola"))
-        ));
-
-        productRepository.save(new Product(
-                "La Mediterranea", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Bufala DOC"), ing.get("Alici di Cetara"), ing.get("Pomodorini pachino"), ing.get("Basilico napoletano"), ing.get("Olio"), ing.get("Origano"))
-        ));
-
-        productRepository.save(new Product(
-                "La Sorrentina", null, new BigDecimal("14.00"), new BigDecimal("12.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Bufala DOC"), ing.get("Aglio"), ing.get("Pomodorini pachino"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Del Compare", null, new BigDecimal("14.00"), new BigDecimal("12.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Friarielli"), ing.get("Ventricina piccante"), ing.get("Gorgonzola"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Salsiccia e Friarielli Special", null, new BigDecimal("12.00"), new BigDecimal("10.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Friarielli"), ing.get("Salsiccia in arrosto"), ing.get("Basilico napoletano"), ing.get("Olio"), ing.get("Tarallo 'n sugna e pepe extra mandorlato"))
-        ));
-
-        productRepository.save(new Product(
-                "La Quattro Formaggi Special", null, new BigDecimal("11.00"), new BigDecimal("9.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Bufala DOC"), ing.get("Grana"), ing.get("Gorgonzola"), ing.get("Tarallo 'n sugna e pepe extra mandorlato"))
-        ));
-
-        productRepository.save(new Product(
-                "La Turista per Caso", null, new BigDecimal("14.00"), new BigDecimal("12.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Friarielli"), ing.get("Gorgonzola"), ing.get("Crema da condimento al formaggio"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Santa Domenica", "Specialità al ragù di carne mista e stracciata di bufala DOP", new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Ragù di carne mista"), ing.get("Provola affumicata DOC"), ing.get("Basilico napoletano"), ing.get("Grana"), ing.get("Fior di latte d'Agerola"), ing.get("Stracciata di bufala DOP"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Costa d'Amalfi", "Pizza d'autore profumata con succo e zeste di limone fresco", new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Crema da condimento al formaggio"), ing.get("Alici di Cetara"), ing.get("Bufala DOC"), ing.get("Pepe nero"), ing.get("Basilico napoletano"), ing.get("Succo di limone"), ing.get("Zeste di limone"), ing.get("Stracciata di bufala DOP"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Brindisina", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Basilico napoletano"), ing.get("Bufala DOC"), ing.get("Crema da condimento al formaggio"), ing.get("Prosciutto crudo"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "La Svizzera", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Ventricina piccante"), ing.get("Carciofini all'olio"), ing.get("Cipolla rossa"), ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Basilico napoletano"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "Aglio, Olio e Peperoncino Special", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Olio all'aglio"), ing.get("Aglio"), ing.get("Peperoncino"), ing.get("Alici di Cetara"), ing.get("Basilico napoletano"), ing.get("Grana"), ing.get("Tarallo 'n sugna e pepe extra mandorlato"), ing.get("Stracciata di bufala DOP"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "Mimosa", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Crema da condimento al formaggio"), ing.get("Prosciutto cotto"), ing.get("Mais"), ing.get("Pepe nero"))
-        ));
-
-        productRepository.save(new Product(
-                "Calabrese", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Fior di latte d'Agerola"), ing.get("Cipolla rossa"), ing.get("Olive nere"), ing.get("'Nduja"))
-        ));
-
-        productRepository.save(new Product(
-                "Sfiziosa", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Ventricina piccante"), ing.get("'Nduja"), ing.get("Gorgonzola"))
-        ));
-
-        productRepository.save(new Product(
-                "Pizza Amoremio", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Olive"))
-        ));
-
-        productRepository.save(new Product(
-                "Manfredi", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Friarielli"), ing.get("Salsiccia in arrosto"), ing.get("Gorgonzola"), ing.get("Basilico napoletano"), ing.get("Pecorino"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "Hawaii", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catSpeciali,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Fior di latte d'Agerola"), ing.get("Prosciutto cotto"), ing.get("Ananas"))
-        ));
-
-        productRepository.save(new Product(
-                "La Parmigiana", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Melanzane"), ing.get("Fior di latte d'Agerola"), ing.get("Basilico napoletano"), ing.get("Provola affumicata DOC"), ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Olio"))
-        ));
-
-        productRepository.save(new Product(
-                "Mamma Mia", "Ricetta tradizionale con polpette al sugo fatte in casa", new BigDecimal("17.00"), new BigDecimal("15.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Sugo polpette"), ing.get("Polpette"), ing.get("Friarielli"), ing.get("Grana"))
-        ));
-
-        productRepository.save(new Product(
-                "Uee a Noo'", null, new BigDecimal("17.00"), new BigDecimal("15.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Sugo polpette"), ing.get("Polpette"), ing.get("Provola"), ing.get("Parmigiano"))
-        ));
-
-        productRepository.save(new Product(
-                "Pizza e Patate", null, new BigDecimal("16.00"), new BigDecimal("14.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Crema da condimento al formaggio"), ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Provola"), ing.get("Patate"), ing.get("Pepe nero"), ing.get("Olio all'aglio"), ing.get("Aglio"), ing.get("Basilico napoletano"))
-        ));
-
-        productRepository.save(new Product(
-                "Casatiello Scomposto", null, new BigDecimal("17.00"), new BigDecimal("15.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Uovo"), ing.get("Prosciutto crudo"), ing.get("Cigoli"), ing.get("Grana"), ing.get("Pepe nero"), ing.get("Tarallo 'n sugna e pepe extra mandorlato"))
-        ));
-
-        productRepository.save(new Product(
-                "Nonna", null, new BigDecimal("17.00"), new BigDecimal("15.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Melanzane"), ing.get("Fior di latte d'Agerola"), ing.get("Provola"), ing.get("Grana"), ing.get("Prosciutto cotto"), ing.get("Ragù"))
-        ));
-
-        productRepository.save(new Product(
-                "Tu vuo fa l'Americano", null, new BigDecimal("16.00"), new BigDecimal("14.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Sugo polpette"), ing.get("Polpette"), ing.get("Datterino rosso"), ing.get("Grana"), ing.get("Fior di latte d'Agerola"))
-        ));
-
-        productRepository.save(new Product(
-                "Ciao Napoli", null, new BigDecimal("17.00"), new BigDecimal("15.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Friarielli"), ing.get("Cigoli"), ing.get("Polpette"), ing.get("Tarallo 'n sugna e pepe extra mandorlato"))
-        ));
-
-        productRepository.save(new Product(
-                "La Genovese", null, new BigDecimal("14.00"), new BigDecimal("12.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Crema alla genovese"), ing.get("Provola"))
-        ));
-
-        productRepository.save(new Product(
-                "La Giudia", null, new BigDecimal("16.00"), new BigDecimal("14.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Crema di carciofi"), ing.get("Guanciale"), ing.get("Fior di latte d'Agerola"), ing.get("Pecorino"))
-        ));
-
-        productRepository.save(new Product(
-                "Amatriciana", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Guanciale"), ing.get("Pecorino"), ing.get("Pepe nero"))
-        ));
-
-        productRepository.save(new Product(
-                "Carbonara", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Carbo crema"), ing.get("Guanciale"), ing.get("Fior di latte d'Agerola"), ing.get("Pecorino"), ing.get("Pepe nero"))
-        ));
-
-        productRepository.save(new Product(
-                "Gricia", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Guanciale"), ing.get("Pecorino"))
-        ));
-
-        productRepository.save(new Product(
-                "Cacio e Pepe", null, new BigDecimal("14.00"), new BigDecimal("12.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Cacio e pepe"))
-        ));
-
-        productRepository.save(new Product(
-                "Tuscia in Fiore", null, new BigDecimal("16.00"), new BigDecimal("14.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Funghi porcini"), ing.get("Salsiccia in arrosto"), ing.get("Fior di latte d'Agerola"))
-        ));
-
-        productRepository.save(new Product(
-                "Anima Mia", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Melanzana al funghetto"), ing.get("Polpette"), ing.get("Fior di latte d'Agerola"))
-        ));
-
-        productRepository.save(new Product(
-                "Scarpariello", null, new BigDecimal("14.00"), new BigDecimal("12.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Aglio"), ing.get("Peperoncino"), ing.get("Pecorino"))
-        ));
-
-        productRepository.save(new Product(
-                "Arrabbiata", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catRicordi,
-                Set.of(ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Peperoncino"), ing.get("Aglio"), ing.get("Prezzemolo"))
-        ));
-
-        productRepository.save(new Product(
-                "Calzone Classico", null, new BigDecimal("10.00"), new BigDecimal("8.00"), true,
-                DestinationArea.PIZZERIA, catCalzoni,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Pomodoro San Marzano schiacciato a mano"), ing.get("Grana"), ing.get("Basilico napoletano"))
-        ));
-
-        productRepository.save(new Product(
-                "Calzone Prosciutto Cotto", null, new BigDecimal("12.00"), new BigDecimal("10.00"), true,
-                DestinationArea.PIZZERIA, catCalzoni,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Grana"), ing.get("Prosciutto cotto"))
-        ));
-
-        productRepository.save(new Product(
-                "Calzone Salsiccia e Funghi", null, new BigDecimal("12.00"), new BigDecimal("10.00"), true,
-                DestinationArea.PIZZERIA, catCalzoni,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Salsiccia in arrosto"), ing.get("Funghi freschi tagliati a mano"))
-        ));
-
-        productRepository.save(new Product(
-                "Calzone Salsiccia e Friarielli", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catCalzoni,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Salsiccia in arrosto"), ing.get("Friarielli"))
-        ));
-
-        productRepository.save(new Product(
-                "Calzone Prosciutto Crudo e Funghi", null, new BigDecimal("12.00"), new BigDecimal("10.00"), true,
-                DestinationArea.PIZZERIA, catCalzoni,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Funghi champignon"), ing.get("Prosciutto crudo"))
-        ));
-
-        productRepository.save(new Product(
-                "Calzone Scarola", null, new BigDecimal("13.00"), new BigDecimal("11.00"), true,
-                DestinationArea.PIZZERIA, catCalzoni,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Scarola"), ing.get("Alici"), ing.get("Olive"))
-        ));
-
-        productRepository.save(new Product(
-                "Calzone Wurstel e Patatine", null, new BigDecimal("12.00"), new BigDecimal("10.00"), true,
-                DestinationArea.PIZZERIA, catCalzoni,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Wurstel"), ing.get("Patatine"))
-        ));
-
-        productRepository.save(new Product(
-                "Calzone Sfizioso", null, new BigDecimal("15.00"), new BigDecimal("13.00"), true,
-                DestinationArea.PIZZERIA, catCalzoni,
-                Set.of(ing.get("Fior di latte d'Agerola"), ing.get("Ventricina piccante"), ing.get("'Nduja"), ing.get("Gorgonzola"))
-        ));
-
-        productRepository.save(new Product(
-                "Calzone Tu vuo fa l'Americano", null, new BigDecimal("16.00"), new BigDecimal("14.00"), true,
-                DestinationArea.PIZZERIA, catCalzoni,
-                Set.of(ing.get("Sugo polpette"), ing.get("Polpette"), ing.get("Datterino rosso"), ing.get("Grana"), ing.get("Fior di latte d'Agerola"))
-        ));
-
-        Product acqua = productRepository.save(new Product(
-                "Acqua Naturale 75cl",
-                "",
-                new BigDecimal("3.5"),
-                new BigDecimal("3.5"),
-                true,
-                DestinationArea.SALA,
-                catBevande,
-                Set.of()
-        ));
-
-        productRepository.save(new Product(
-                "Acqua Frizzante 75cl",
-                "",
-                new BigDecimal("3.5"),
-                new BigDecimal("3.5"),
-                true,
-                DestinationArea.SALA,
-                catBevande,
-                Set.of()
-        ));
-
-        Product tiramisu = productRepository.save(new Product(
-                "Tiramisù della Casa",
-                "Dessert al cucchiaio con mascarpone e savoiardi",
-                new BigDecimal("5.00"),
-                new BigDecimal("5.00"),
-                true,
-                DestinationArea.SALA,
-                catBevande,
-                Set.of()
-        ));
-
-        BigDecimal coperto = new BigDecimal("2.00");
+                saveProduct("La Napoli", null, "12.00", "10.00", catClassiche, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Alici", "Fior di latte d'Agerola", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.PESCE, Allergen.LATTE));
+
+                Product salamePiccanteRef = saveProduct("La Salame Piccante", null, "12.00", "10.00", catClassiche, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Ventricina piccante", "Basilico napoletano", "Olio", "Fior di latte d'Agerola"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Quattro Stagioni", null, "14.00", "12.00", catClassiche, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Salsiccia in arrosto", "Carciofini all'olio", "Prosciutto cotto", "Funghi freschi tagliati a mano", "Fior di latte d'Agerola", "Olio", "Basilico napoletano"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Quattro Formaggi", null, "13.00", "11.00", catClassiche, ing,
+                Set.of("Bufala DOC", "Pecorino", "Crema da condimento al formaggio", "Gorgonzola", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Capricciosa", null, "15.00", "13.00", catClassiche, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Salsiccia in arrosto", "Carciofini all'olio", "Prosciutto cotto", "Funghi freschi tagliati a mano", "Olive nere", "Basilico napoletano", "Olio", "Fior di latte d'Agerola"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Salsiccia e Friarielli", null, "13.00", "11.00", catClassiche, ing,
+                Set.of("Fior di latte d'Agerola", "Friarielli", "Salsiccia in arrosto", "Basilico napoletano", "Pecorino", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Salsiccia e Friarelli alla Casertana", null, "15.00", "13.00", catClassiche, ing,
+                Set.of("Fior di latte d'Agerola", "Friarielli", "Salsiccia in arrosto", "Provola", "Basilico napoletano", "Pecorino", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Tonno e Cipolla", null, "13.00", "11.00", catClassiche, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Fior di latte d'Agerola", "Tonno", "Cipolla rossa", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.PESCE, Allergen.LATTE));
+
+        saveProduct("La Patate e Salsiccia", null, "13.00", "11.00", catClassiche, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Fior di latte d'Agerola", "Patate", "Salsiccia in arrosto", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Funghi e Salsiccia", null, "13.00", "11.00", catClassiche, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Funghi freschi tagliati a mano", "Salsiccia in arrosto", "Fior di latte d'Agerola", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Biancaneve", null, "14.00", "12.00", catClassiche, ing,
+                Set.of("Fior di latte d'Agerola", "Pomodorini pachino", "Basilico napoletano", "Prosciutto crudo", "Rucola", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("L'Americana", null, "13.00", "11.00", catClassiche, ing,
+                Set.of("Fior di latte d'Agerola", "Wurstel", "Patate", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Vegetariana", null, "15.00", "13.00", catClassiche, ing,
+                Set.of("Verdure grigliate", "Fior di latte d'Agerola", "Olio", "Basilico napoletano"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Funghi e Crudo", null, "13.00", "11.00", catClassiche, ing,
+                Set.of("Fior di latte d'Agerola", "Funghi champignon", "Basilico napoletano", "Prosciutto crudo", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Funghi e Cotto", null, "13.00", "11.00", catClassiche, ing,
+                Set.of("Fior di latte d'Agerola", "Funghi champignon", "Basilico napoletano", "Prosciutto cotto", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Scarola", null, "13.00", "11.00", catClassiche, ing,
+                Set.of("Fior di latte d'Agerola", "Scarola", "Alici", "Olive", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.PESCE, Allergen.LATTE));
+
+        saveProduct("La Provola e Pepe", null, "12.00", "10.00", catClassiche, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Provola affumicata DOC", "Pepe nero", "Fior di latte d'Agerola", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Provola e Pepe + Cigoli", null, "14.50", "12.50", catClassiche, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Provola affumicata DOC", "Pepe nero", "Fior di latte d'Agerola", "Cigoli", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Provola e Pepe White Passion", null, "12.00", "10.00", catClassiche, ing,
+                Set.of("Crema da condimento al formaggio", "Provola affumicata DOC", "Pepe nero", "Fior di latte d'Agerola", "Cigoli", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+                saveProduct("La Datterina", "Pizza speciale con datterino giallo, alici di Cetara e bufala DOP", "15.00", "13.00", catSpeciali, ing,
+                Set.of("Bufala DOC", "Pomodorino rosso ciliegino", "Datterino del piennolo giallo", "Alici di Cetara", "Aglio", "Olio", "Basilico napoletano"),
+                Set.of(Allergen.GLUTINE, Allergen.PESCE, Allergen.LATTE));
+
+        saveProduct("La Pugliese", null, "14.00", "12.00", catSpeciali, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Friarielli", "Pomodorini pachino", "Alici di Cetara", "Olive", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.PESCE));
+
+        saveProduct("La Rustica", null, "13.00", "11.00", catSpeciali, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Funghi", "Grana", "Aglio", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Nordica", null, "14.00", "12.00", catSpeciali, ing,
+                Set.of("Datterino del piennolo giallo", "Cipolla rossa", "Gorgonzola", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Zozzona", "Golosità della casa con crema al formaggio, gorgonzola e patate", "15.00", "13.00", catSpeciali, ing,
+                Set.of("Crema da condimento al formaggio", "Ventricina piccante", "Basilico napoletano", "Patate", "Gorgonzola", "Olio", "Fior di latte d'Agerola"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Mediterranea", null, "13.00", "11.00", catSpeciali, ing,
+                Set.of("Bufala DOC", "Alici di Cetara", "Pomodorini pachino", "Basilico napoletano", "Olio", "Origano"),
+                Set.of(Allergen.GLUTINE, Allergen.PESCE, Allergen.LATTE));
+
+        saveProduct("La Sorrentina", null, "14.00", "12.00", catSpeciali, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Bufala DOC", "Aglio", "Pomodorini pachino", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Del Compare", null, "14.00", "12.00", catSpeciali, ing,
+                Set.of("Fior di latte d'Agerola", "Friarielli", "Ventricina piccante", "Gorgonzola", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Salsiccia e Friarielli Special", null, "12.00", "10.00", catSpeciali, ing,
+                Set.of("Fior di latte d'Agerola", "Friarielli", "Salsiccia in arrosto", "Basilico napoletano", "Olio", "Tarallo 'n sugna e pepe extra mandorlato"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE, Allergen.FRUTTA_A_GUSCIO));
+
+        saveProduct("La Quattro Formaggi Special", null, "11.00", "9.00", catSpeciali, ing,
+                Set.of("Fior di latte d'Agerola", "Bufala DOC", "Grana", "Gorgonzola", "Tarallo 'n sugna e pepe extra mandorlato"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE, Allergen.FRUTTA_A_GUSCIO));
+
+        saveProduct("La Turista per Caso", null, "14.00", "12.00", catSpeciali, ing,
+                Set.of("Fior di latte d'Agerola", "Friarielli", "Gorgonzola", "Crema da condimento al formaggio", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Santa Domenica", "Specialità al ragù di carne mista e stracciata di bufala DOP", "15.00", "13.00", catSpeciali, ing,
+                Set.of("Ragù di carne mista", "Provola affumicata DOC", "Basilico napoletano", "Grana", "Fior di latte d'Agerola", "Stracciata di bufala DOP", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE, Allergen.SEDANO));
+
+        saveProduct("La Costa d'Amalfi", "Pizza d'autore profumata con succo e zeste di limone fresco", "15.00", "13.00", catSpeciali, ing,
+                Set.of("Crema da condimento al formaggio", "Alici di Cetara", "Bufala DOC", "Pepe nero", "Basilico napoletano", "Succo di limone", "Zeste di limone", "Stracciata di bufala DOP", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.PESCE, Allergen.LATTE));
+
+        saveProduct("La Brindisina", null, "15.00", "13.00", catSpeciali, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Basilico napoletano", "Bufala DOC", "Crema da condimento al formaggio", "Prosciutto crudo", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("La Svizzera", null, "15.00", "13.00", catSpeciali, ing,
+                Set.of("Fior di latte d'Agerola", "Ventricina piccante", "Carciofini all'olio", "Cipolla rossa", "Pomodoro San Marzano schiacciato a mano", "Basilico napoletano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Aglio, Olio e Peperoncino Special", null, "15.00", "13.00", catSpeciali, ing,
+                Set.of("Olio all'aglio", "Aglio", "Peperoncino", "Alici di Cetara", "Basilico napoletano", "Grana", "Tarallo 'n sugna e pepe extra mandorlato", "Stracciata di bufala DOP", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.PESCE, Allergen.LATTE, Allergen.FRUTTA_A_GUSCIO));
+
+        saveProduct("Mimosa", null, "15.00", "13.00", catSpeciali, ing,
+                Set.of("Fior di latte d'Agerola", "Crema da condimento al formaggio", "Prosciutto cotto", "Mais", "Pepe nero"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Calabrese", null, "15.00", "13.00", catSpeciali, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Fior di latte d'Agerola", "Cipolla rossa", "Olive nere", "'Nduja"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Sfiziosa", null, "15.00", "13.00", catSpeciali, ing,
+                Set.of("Fior di latte d'Agerola", "Ventricina piccante", "'Nduja", "Gorgonzola"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Pizza Amoremio", null, "13.00", "11.00", catSpeciali, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Olive"),
+                Set.of(Allergen.GLUTINE));
+
+        saveProduct("Manfredi", null, "15.00", "13.00", catSpeciali, ing,
+                Set.of("Fior di latte d'Agerola", "Friarielli", "Salsiccia in arrosto", "Gorgonzola", "Basilico napoletano", "Pecorino", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Hawaii", null, "15.00", "13.00", catSpeciali, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Fior di latte d'Agerola", "Prosciutto cotto", "Ananas"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+                saveProduct("La Parmigiana", null, "15.00", "13.00", catRicordi, ing,
+                Set.of("Melanzane", "Fior di latte d'Agerola", "Basilico napoletano", "Provola affumicata DOC", "Pomodoro San Marzano schiacciato a mano", "Olio"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Mamma Mia", "Ricetta tradizionale con polpette al sugo fatte in casa", "17.00", "15.00", catRicordi, ing,
+                Set.of("Sugo polpette", "Polpette", "Friarielli", "Grana"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Uee a Noo'", null, "17.00", "15.00", catRicordi, ing,
+                Set.of("Sugo polpette", "Polpette", "Provola", "Parmigiano"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Pizza e Patate", null, "16.00", "14.00", catRicordi, ing,
+                Set.of("Crema da condimento al formaggio", "Pomodoro San Marzano schiacciato a mano", "Provola", "Patate", "Pepe nero", "Olio all'aglio", "Aglio", "Basilico napoletano"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Casatiello Scomposto", null, "17.00", "15.00", catRicordi, ing,
+                Set.of("Fior di latte d'Agerola", "Uovo", "Prosciutto crudo", "Cigoli", "Grana", "Pepe nero", "Tarallo 'n sugna e pepe extra mandorlato"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE, Allergen.UOVA, Allergen.FRUTTA_A_GUSCIO));
+
+        saveProduct("Nonna", null, "17.00", "15.00", catRicordi, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Melanzane", "Fior di latte d'Agerola", "Provola", "Grana", "Prosciutto cotto", "Ragù"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE, Allergen.SEDANO));
+
+        saveProduct("Tu vuo fa l'Americano", null, "16.00", "14.00", catRicordi, ing,
+                Set.of("Sugo polpette", "Polpette", "Datterino rosso", "Grana", "Fior di latte d'Agerola"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Ciao Napoli", null, "17.00", "15.00", catRicordi, ing,
+                Set.of("Fior di latte d'Agerola", "Friarielli", "Cigoli", "Polpette", "Tarallo 'n sugna e pepe extra mandorlato"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE, Allergen.FRUTTA_A_GUSCIO));
+
+        saveProduct("La Genovese", null, "14.00", "12.00", catRicordi, ing,
+                Set.of("Crema alla genovese", "Provola"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE, Allergen.SEDANO));
+
+        saveProduct("La Giudia", null, "16.00", "14.00", catRicordi, ing,
+                Set.of("Crema di carciofi", "Guanciale", "Fior di latte d'Agerola", "Pecorino"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Amatriciana", null, "15.00", "13.00", catRicordi, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Guanciale", "Pecorino", "Pepe nero"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Carbonara", null, "15.00", "13.00", catRicordi, ing,
+                Set.of("Carbo crema", "Guanciale", "Fior di latte d'Agerola", "Pecorino", "Pepe nero"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE, Allergen.UOVA));
+
+        saveProduct("Gricia", null, "15.00", "13.00", catRicordi, ing,
+                Set.of("Fior di latte d'Agerola", "Guanciale", "Pecorino"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Cacio e Pepe", null, "14.00", "12.00", catRicordi, ing,
+                Set.of("Fior di latte d'Agerola", "Cacio e pepe"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Tuscia in Fiore", null, "16.00", "14.00", catRicordi, ing,
+                Set.of("Funghi porcini", "Salsiccia in arrosto", "Fior di latte d'Agerola"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Anima Mia", null, "15.00", "13.00", catRicordi, ing,
+                Set.of("Melanzana al funghetto", "Polpette", "Fior di latte d'Agerola"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Scarpariello", null, "14.00", "12.00", catRicordi, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Aglio", "Peperoncino", "Pecorino"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Arrabbiata", null, "13.00", "11.00", catRicordi, ing,
+                Set.of("Pomodoro San Marzano schiacciato a mano", "Peperoncino", "Aglio", "Prezzemolo"),
+                Set.of(Allergen.GLUTINE));
+
+        saveProduct("Calzone Classico", null, "10.00", "8.00", catCalzoni, ing,
+                Set.of("Fior di latte d'Agerola", "Pomodoro San Marzano schiacciato a mano", "Grana", "Basilico napoletano"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Calzone Prosciutto Cotto", null, "12.00", "10.00", catCalzoni, ing,
+                Set.of("Fior di latte d'Agerola", "Grana", "Prosciutto cotto"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Calzone Salsiccia e Funghi", null, "12.00", "10.00", catCalzoni, ing,
+                Set.of("Fior di latte d'Agerola", "Salsiccia in arrosto", "Funghi freschi tagliati a mano"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Calzone Salsiccia e Friarielli", null, "13.00", "11.00", catCalzoni, ing,
+                Set.of("Fior di latte d'Agerola", "Salsiccia in arrosto", "Friarielli"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Calzone Prosciutto Crudo e Funghi", null, "12.00", "10.00", catCalzoni, ing,
+                Set.of("Fior di latte d'Agerola", "Funghi champignon", "Prosciutto crudo"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Calzone Scarola", null, "13.00", "11.00", catCalzoni, ing,
+                Set.of("Fior di latte d'Agerola", "Scarola", "Alici", "Olive"),
+                Set.of(Allergen.GLUTINE, Allergen.PESCE, Allergen.LATTE));
+
+        saveProduct("Calzone Wurstel e Patatine", null, "12.00", "10.00", catCalzoni, ing,
+                Set.of("Fior di latte d'Agerola", "Wurstel", "Patatine"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Calzone Sfizioso", null, "15.00", "13.00", catCalzoni, ing,
+                Set.of("Fior di latte d'Agerola", "Ventricina piccante", "'Nduja", "Gorgonzola"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+        saveProduct("Calzone Tu vuo fa l'Americano", null, "16.00", "14.00", catCalzoni, ing,
+                Set.of("Sugo polpette", "Polpette", "Datterino rosso", "Grana", "Fior di latte d'Agerola"),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE));
+
+                Product acqua = saveProduct("Acqua Naturale 75cl", "", "3.5", "3.5", DestinationArea.SALA,
+                        catBevande, ing, Set.of(), Set.of());
+
+        saveProduct("Acqua Frizzante 75cl", "", "3.5", "3.5", DestinationArea.SALA,
+                catBevande, ing, Set.of(), Set.of());
+
+        saveProduct("Tiramisù della Casa", "Dessert al cucchiaio con mascarpone e savoiardi",
+                "5.00", "5.00", DestinationArea.SALA, catBevande, ing, Set.of(),
+                Set.of(Allergen.GLUTINE, Allergen.LATTE, Allergen.UOVA));
+
+                BigDecimal coperto = new BigDecimal("2.00");
 
         Order order1 = new Order();
         order1.setTableNumber(4);
@@ -637,9 +461,6 @@ public class DataSeeder implements CommandLineRunner {
         order1.setOrderStatus(OrderStatus.PENDING);
         order1.setCreatedAt(LocalDateTime.now().minusMinutes(10));
         order1.setNotes("Pizze ben cotte");
-
-        Product margheritaRef = productRepository.findAll().stream().filter(p -> p.getName().equals("Margherita")).findFirst().get();
-        Product salamePiccanteRef = productRepository.findAll().stream().filter(p -> p.getName().equals("La Salame Piccante")).findFirst().get();
 
         OrderItem item1_1 = new OrderItem(order1, margheritaRef, 2, margheritaRef.getPrice(), margheritaRef.getTakeawayPrice(), "Una ben cotta");
         OrderItem item1_2 = new OrderItem(order1, salamePiccanteRef, 1, salamePiccanteRef.getPrice(), salamePiccanteRef.getTakeawayPrice(), null);
@@ -650,6 +471,53 @@ public class DataSeeder implements CommandLineRunner {
                 .add(salamePiccanteRef.getPrice())
                 .add(acqua.getPrice().multiply(BigDecimal.valueOf(2)))
                 .add(coperto.multiply(BigDecimal.valueOf(2))));
-        orderRepository.save(order1);
+                orderRepository.save(order1);
+    }
+
+    // ---------------------------------------------------------------------
+    // Helper: crea e salva un prodotto (con allergeni) in modo compatto
+    // ---------------------------------------------------------------------
+        private Product saveProduct(String name,
+                                    String description,
+                                    String price,
+                                    String takeawayPrice,
+                                    Category category,
+                                    Map<String, Ingredient> ing,
+                                    Set<String> ingredientNames,
+                                    Set<Allergen> allergens) {
+            return saveProduct(name, description, price, takeawayPrice, DestinationArea.PIZZERIA,
+                    category, ing, ingredientNames, allergens);
+        }
+
+        private Product saveProduct(String name,
+                                    String description,
+                                    String price,
+                                    String takeawayPrice,
+                                    DestinationArea area,
+                                    Category category,
+                                    Map<String, Ingredient> ing,
+                                    Set<String> ingredientNames,
+                                    Set<Allergen> allergens) {
+            Set<Ingredient> ingredients = new HashSet<>();
+        for (String ingredientName : ingredientNames) {
+            Ingredient ingredient = ing.get(ingredientName);
+            if (ingredient == null) {
+                throw new IllegalStateException("Ingrediente non definito nel seeder: " + ingredientName);
+            }
+            ingredients.add(ingredient);
+        }
+
+        Product product = new Product(
+                name,
+                description,
+                new BigDecimal(price),
+                                new BigDecimal(takeawayPrice),
+                true,
+                area,
+                category,
+                ingredients
+        );
+                product.setAllergens(allergens != null ? allergens : new HashSet<>());
+        return productRepository.save(product);
     }
 }
