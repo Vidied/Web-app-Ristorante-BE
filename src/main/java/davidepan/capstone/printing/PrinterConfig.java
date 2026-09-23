@@ -31,8 +31,10 @@ public class PrinterConfig {
 
     @Bean
     public SystemPrinterConnection salaPrinterConnection(
-            @Value("${printer.sala.name}") String name) {
-        return new SystemPrinterConnection(name);
+            @Value("${printer.sala.name}") String name,
+            @Value("${printer.sala.max-retries:3}") int maxRetries,
+            @Value("${printer.sala.retry-delay-ms:1500}") long retryDelayMillis) {
+        return new SystemPrinterConnection(name, maxRetries, retryDelayMillis);
     }
 
     @Bean
@@ -49,7 +51,9 @@ public class PrinterConfig {
 
     @Bean
     public SystemPrinterConnection receiptPrinterConnection(
-            @Value("${printer.receipt.name}") String name) {
-        return new SystemPrinterConnection(name);
+            @Value("${printer.receipt.name}") String name,
+            @Value("${printer.receipt.max-retries:3}") int maxRetries,
+            @Value("${printer.receipt.retry-delay-ms:1500}") long retryDelayMillis) {
+        return new SystemPrinterConnection(name, maxRetries, retryDelayMillis);
     }
 }

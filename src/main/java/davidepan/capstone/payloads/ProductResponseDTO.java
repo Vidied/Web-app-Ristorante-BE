@@ -2,9 +2,11 @@ package davidepan.capstone.payloads;
 
 import davidepan.capstone.entities.Ingredient;
 import davidepan.capstone.entities.Product;
+import davidepan.capstone.enums.Allergen;
 import davidepan.capstone.enums.DestinationArea;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 
 public record ProductResponseDTO(
         Long id,
@@ -16,7 +18,8 @@ public record ProductResponseDTO(
         Boolean isAvailable,
         Long categoryId,
         String categoryName,
-        List<String> ingredientNames
+        List<String> ingredientNames,
+        Set<Allergen> allergens
 ) {
     public static ProductResponseDTO fromEntity(Product product) {
         return new ProductResponseDTO(
@@ -31,7 +34,8 @@ public record ProductResponseDTO(
                 product.getCategory() != null ? product.getCategory().getName() : null,
                 product.getIngredients() != null
                         ? product.getIngredients().stream().map(Ingredient::getName).toList()
-                        : List.of()
+                        : List.of(),
+                product.getAllergens() != null ? product.getAllergens() : Set.of()
         );
     }
 }

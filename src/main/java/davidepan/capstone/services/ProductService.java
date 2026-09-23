@@ -95,8 +95,10 @@ public class ProductService {
                 category,
                 ingredients
         );
+        product.setAllergens(body.allergens() != null ? body.allergens() : new HashSet<>());
 
         Product savedProduct = productRepository.save(product);
+
         return ProductResponseDTO.fromEntity(savedProduct);
     }
 

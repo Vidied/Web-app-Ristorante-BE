@@ -1,5 +1,6 @@
 package davidepan.capstone.entities;
 
+import davidepan.capstone.enums.Allergen;
 import davidepan.capstone.enums.DestinationArea;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -53,6 +54,12 @@ public class Product {
             inverseJoinColumns = @JoinColumn(name = "ingredient_id")
     )
     private Set<Ingredient> ingredients = new HashSet<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "product_allergens", joinColumns = @JoinColumn(name = "product_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "allergen")
+    private Set<Allergen> allergens = new HashSet<>();
 
     public Product(String name, String description, BigDecimal price, BigDecimal takeawayPrice,Boolean isAvailable, DestinationArea destinationArea, Category category, Set<Ingredient> ingredients) {
         this.name = name;
