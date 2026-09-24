@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,13 +53,34 @@ public class OrderPrintService {
         return printItems(order, order.getItems(), false);
     }
 
+            public void printCancellation(Order order) {
+                byte[] ticket = receiptBuilder.buildCancellation(order);
+        Set<DestinationArea> involvedAreas = order.getItems().stream()
+                .map(i -> i.getProduct().getDestinationArea())
+                .collect(Collectors.toSet());
+
+        for (DestinationArea area : involvedAreas) {
+            PrinterConnection connection = printerConnections.get(area);
+            if (connection == null) {
+                continue;
+            }
+            try {
+                connection.print(ticket);
+            } catch (PrinterException e) {
+                log.warn("Stampa annullamento fallita per ordine {} su {}: {}",
+                        order.getId(), area, e.getMessage());
+            }
+        }
+    }
+
+
     public List<PrintResultDTO> printItems(Order order, List<OrderItem> items, boolean isAddition) {
         Map<DestinationArea, List<OrderItem>> byArea = items.stream()
                 .collect(Collectors.groupingBy(i -> i.getProduct().getDestinationArea()));
 
         List<PrintResultDTO> results = new ArrayList<>();
 
-        for (Map.Entry<DestinationArea, List<OrderItem>> entry : byArea.entrySet()) {
+                for (Map.Entry<DestinationArea, List<OrderItem>> entry : byArea.entrySet()) {
             DestinationArea area = entry.getKey();
             PrinterConnection connection = printerConnections.get(area);
 
@@ -80,3 +102,4 @@ public class OrderPrintService {
 
 
 }
+

@@ -104,13 +104,13 @@ public class OrderService {
         return convertToResponseDto(updatedOrder);
     }
 
-    // Aggiunta di nuovi prodotti a un ordine esistente
+        // Aggiunta di nuovi prodotti a un ordine esistente
     @Transactional
     public OrderResponseDTO appendItems(Long orderId, List<OrderItemRequestDTO> newItemsDTO, Integer newCoverCount) {
         Order order = this.findEntityById(orderId);
 
         if (order.getOrderStatus() == OrderStatus.COMPLETED || order.getOrderStatus() == OrderStatus.CANCELLED) {
-            throw new BadRequestException("Impossibile modificare un ordine già chiuso o annullato.");
+            throw new BadRequestException("Impossibile integrare un ordine chiuso o annullato.");
         }
 
         boolean isTakeaway = order.getOrderType() != null && order.getOrderType().name().equalsIgnoreCase("ASPORTO");
@@ -171,10 +171,20 @@ public class OrderService {
         return convertToResponseDto(updatedOrder);
     }
 
-    public OrderResponseDTO updateStatus(Long id, OrderStatusUpdateDTO body) {
+                    public OrderResponseDTO updateStatus(Long id, OrderStatusUpdateDTO body) {
         Order found = this.findEntityById(id);
+        boolean wasCancelled = found.getOrderStatus() == OrderStatus.CANCELLED;
         found.setOrderStatus(body.orderStatus());
         Order updatedOrder = orderRepository.save(found);
+
+        if (!wasCancelled && body.orderStatus() == OrderStatus.CANCELLED) {
+            try {
+                orderPrintService.printCancellation(updatedOrder);
+            } catch (Exception e) {
+                log.error("Errore inatteso durante la stampa dell'annullamento per l'ordine {}", updatedOrder.getId(), e);
+            }
+        }
+
         return convertToResponseDto(updatedOrder);
     }
 

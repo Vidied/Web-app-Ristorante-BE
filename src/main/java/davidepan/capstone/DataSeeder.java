@@ -18,18 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Seeder dei dati dimostrativi (admin, menu con allergeni, ordine di esempio).
- *
- * COME RIPARTIRE DA UN DB PULITO CON UN SINGOLO AVVIO:
- *   1. in application.properties imposta  spring.jpa.hibernate.ddl-auto=create-drop
- *   2. avvia l'app UNA volta: Hibernate droppa/ricrea lo schema e questo seeder ripopola tutto
- *   3. rimetti  spring.jpa.hibernate.ddl-auto=update  e riavvia normalmente
- *
- * Grazie alle guardie (count/email) è idempotente: con ddl-auto=update NON duplica i dati.
- */
 @Component
-@org.springframework.core.annotation.Order(2) // eseguito DOPO RoleSeeder; FQN per evitare conflitto con entities.Order
+@org.springframework.core.annotation.Order(2)
 public class DataSeeder implements CommandLineRunner {
 
     @Autowired
@@ -474,9 +464,6 @@ public class DataSeeder implements CommandLineRunner {
                 orderRepository.save(order1);
     }
 
-    // ---------------------------------------------------------------------
-    // Helper: crea e salva un prodotto (con allergeni) in modo compatto
-    // ---------------------------------------------------------------------
         private Product saveProduct(String name,
                                     String description,
                                     String price,

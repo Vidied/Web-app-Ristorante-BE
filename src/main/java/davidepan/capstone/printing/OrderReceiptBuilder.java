@@ -148,6 +148,35 @@ public class OrderReceiptBuilder {
         return b.build();
     }
 
+    public byte[] buildCancellation(Order order) {
+        EscPosCommandBuilder b = new EscPosCommandBuilder().init();
+
+        b.alignCenter().characterSize(2, 2).bold(true)
+                .text(centerWithDashes("COMANDA CANCELLATA", 3, HEADER_LINE_WIDTH))
+                .resetCharacterSize().bold(false).alignLeft().newLine();
+
+        b.alignCenter().characterSize(2, 2).bold(true)
+                .text("*** ANNULLATO ***")
+                .resetCharacterSize().bold(false).alignLeft().newLine();
+
+        b.characterSize(2, 1).bold(true);
+        if (order.getTableNumber() != null) {
+            b.text("TAVOLO " + order.getTableNumber()).newLine();
+        }
+        b.text(order.getOrderType() != null ? order.getOrderType().name() : "");
+        b.text(" - " + TIME_FORMAT.format(order.getCreatedAt()));
+        b.newLine();
+        b.resetCharacterSize().bold(false);
+
+        b.text(SEPARATOR).newLine();
+
+        b.beep(3, 2);
+
+        b.padToMinimumLines(MIN_TICKET_LINES);
+        b.feed(FEED_BEFORE_CUT).cut();
+        return b.build();
+    }
+
     private String formatLine(String label, BigDecimal amount) {
         String truncatedLabel = truncate(label, NAME_COL_WIDTH);
         return String.format("%-" + NAME_COL_WIDTH + "s%" + PRICE_COL_WIDTH + ".2f",
