@@ -183,11 +183,12 @@ public class OrderReceiptBuilder {
                 truncatedLabel, amount);
     }
 
-    private String centerWithDashes(String label, int minDashesEachSide, int lineWidth) {
-        int totalDashes = lineWidth - label.length() - 2;
-        if (totalDashes < minDashesEachSide * 2) {
-            totalDashes = minDashesEachSide * 2;
+        private String centerWithDashes(String label, int minDashesEachSide, int lineWidth) {
+        int maxDashesAvailable = lineWidth - label.length() - 2;
+        if (maxDashesAvailable <= 0) {
+            return label;
         }
+        int totalDashes = Math.min(maxDashesAvailable, minDashesEachSide * 2);
         int left = totalDashes / 2;
         int right = totalDashes - left;
         return "-".repeat(left) + " " + label + " " + "-".repeat(right);
