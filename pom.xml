@@ -14,7 +14,7 @@
 	<properties>
 		<java.version>25</java.version>
 		<jjwt.version>0.12.6</jjwt.version>
-		<jserialcomm.version>2.11.0</jserialcomm.version>
+		<jserialcomm.version>2.11.4</jserialcomm.version>
 	</properties>
 	<dependencies>
 		<dependency>
