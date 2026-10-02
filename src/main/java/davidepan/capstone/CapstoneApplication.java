@@ -8,6 +8,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class CapstoneApplication {
 	public static void main(String[] args) {
+
+		System.out.println("=== AUTO-UPDATE TEST: nuova versione attiva ===");
+
 		SpringApplication.run(CapstoneApplication.class, args);
 	}
 }
