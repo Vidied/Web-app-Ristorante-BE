@@ -37,6 +37,7 @@ public class PrinterHealthCheck {
                 log.info("Stampante {} tornata raggiungibile.", name);
             } else if (!available && wasAvailable) {
                 log.warn("Stampante {} non raggiungibile (controllo periodico).", name);
+                log.warn("Porte visibili in questo momento:\n{}", SerialPrinterConnection.dumpAvailablePorts());
             }
 
             lastKnownAvailable.put(name, available);

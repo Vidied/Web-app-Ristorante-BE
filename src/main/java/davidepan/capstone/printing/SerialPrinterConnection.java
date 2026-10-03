@@ -7,21 +7,25 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 public class SerialPrinterConnection implements PrinterConnection {
 
     private static final Logger log = LoggerFactory.getLogger(SerialPrinterConnection.class);
 
+    private final String label;
     private final String configuredPort;
     private final String descriptiveNameHint;
     private final int maxRetries;
     private final long retryDelayMillis;
 
-    public SerialPrinterConnection(String configuredPort, String descriptiveNameHint,
+    public SerialPrinterConnection(String label, String configuredPort, String descriptiveNameHint,
                                    int maxRetries, long retryDelayMillis) {
-        this.configuredPort = configuredPort;
-        this.descriptiveNameHint = descriptiveNameHint;
+        this.label = label;
+        this.configuredPort = configuredPort == null ? "" : configuredPort.trim();
+        this.descriptiveNameHint = descriptiveNameHint == null ? "" : descriptiveNameHint.trim();
         this.maxRetries = maxRetries;
         this.retryDelayMillis = retryDelayMillis;
     }
@@ -50,25 +54,54 @@ public class SerialPrinterConnection implements PrinterConnection {
         }
     }
 
+    public static String dumpAvailablePorts() {
+        SerialPort[] ports = SerialPort.getCommPorts();
+        StringBuilder dump = new StringBuilder();
+        if (ports.length == 0) {
+            dump.append("  nessuna porta seriale rilevata");
+        } else {
+            for (SerialPort port : ports) {
+                if (dump.length() > 0) dump.append('\n');
+                dump.append("  - SystemPortName=").append(port.getSystemPortName())
+                        .append(" | DescriptivePortName=").append(safe(port.getDescriptivePortName()))
+                        .append(" | PortDescription=").append(safe(port.getPortDescription()))
+                        .append(" | PortLocation=").append(safe(port.getPortLocation()));
+            }
+        }
+        return dump.toString();
+    }
+
     private SerialPort openWithRetry() throws PrinterException {
         PrinterException lastFailure = null;
 
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
-            String portName = resolvePortName();
-            SerialPort port = SerialPort.getCommPort(portName);
-            port.setBaudRate(9600);
-            port.setComPortTimeouts(SerialPort.TIMEOUT_WRITE_BLOCKING, 3000, 3000);
+            List<String> candidates = resolvePortCandidates();
 
-            if (port.openPort()) {
-                if (attempt > 1) {
-                    log.info("Stampante pizzeria raggiunta al tentativo {}/{} su {}", attempt, maxRetries, portName);
+            if (candidates.isEmpty()) {
+                log.warn("Stampante {}: nessuna porta candidata rilevata.", label);
+                log.warn("Porte visibili in questo momento:\n{}", dumpAvailablePorts());
+                lastFailure = new PrinterException("Stampante " + label
+                        + ": nessuna porta candidata rilevata (porta configurata " + configuredPort + ")");
+            } else {
+                for (String portName : candidates) {
+                    SerialPort port = preparePort(portName);
+
+                    if (port.openPort()) {
+                        if (attempt > 1) {
+                            log.info("Stampante {} raggiunta al tentativo {}/{} su {}",
+                                    label, attempt, maxRetries, portName);
+                        }
+                        return port;
+                    }
+
+                    lastFailure = new PrinterException("Impossibile aprire la porta " + portName
+                            + " (tentativo " + attempt + "/" + maxRetries + ")");
+                    log.warn(lastFailure.getMessage());
                 }
-                return port;
-            }
 
-            lastFailure = new PrinterException(
-                    "Impossibile aprire la porta " + portName + " (tentativo " + attempt + "/" + maxRetries + ")");
-            log.warn(lastFailure.getMessage());
+                log.warn("Stampante {}: nessuna delle porte candidate si è aperta.", label);
+                log.warn("Porte visibili in questo momento:\n{}", dumpAvailablePorts());
+            }
 
             if (attempt < maxRetries) {
                 try {
@@ -81,19 +114,56 @@ public class SerialPrinterConnection implements PrinterConnection {
         }
 
         throw new PrinterException(
-                "Stampante pizzeria offline dopo " + maxRetries + " tentativi", lastFailure);
+                "Stampante " + label + " offline dopo " + maxRetries + " tentativi", lastFailure);
     }
 
-    private String resolvePortName() {
-        boolean configuredExists = Arrays.stream(SerialPort.getCommPorts())
-                .anyMatch(p -> p.getSystemPortName().equalsIgnoreCase(configuredPort));
-        if (configuredExists) return configuredPort;
+    private List<String> resolvePortCandidates() {
+        List<String> matchesOutgoing = new ArrayList<>();
+        List<String> matchesAny = new ArrayList<>();
+        boolean configuredExists = false;
+        String hint = descriptiveNameHint.toLowerCase(Locale.ROOT);
 
-        return Arrays.stream(SerialPort.getCommPorts())
-                .filter(p -> p.getDescriptivePortName().toUpperCase().contains(descriptiveNameHint.toUpperCase()))
-                .findFirst()
-                .map(SerialPort::getSystemPortName)
-                .orElseThrow(() -> new PrinterException(
-                        "Stampante pizzeria non trovata né su " + configuredPort + " né tramite ricerca automatica"));
+        for (SerialPort port : SerialPort.getCommPorts()) {
+            String systemPortName = port.getSystemPortName();
+
+            if (!configuredPort.isEmpty() && configuredPort.equalsIgnoreCase(systemPortName)) {
+                configuredExists = true;
+            }
+
+            if (hint.isEmpty()) continue;
+
+            String description = descriptiveText(port).toLowerCase(Locale.ROOT);
+            if (!description.contains(hint)) continue;
+
+            if (!matchesAny.contains(systemPortName)) matchesAny.add(systemPortName);
+
+            boolean incoming = description.contains("incoming") || description.contains("in ingresso");
+            if (!incoming && !matchesOutgoing.contains(systemPortName)) matchesOutgoing.add(systemPortName);
+        }
+
+        List<String> candidates = new ArrayList<>(matchesOutgoing);
+        for (String portName : matchesAny) {
+            if (!candidates.contains(portName)) candidates.add(portName);
+        }
+        if (configuredExists && !candidates.contains(configuredPort)) {
+            candidates.add(configuredPort);
+        }
+        return candidates;
+    }
+
+    private SerialPort preparePort(String portName) {
+        SerialPort port = SerialPort.getCommPort(portName);
+        port.setBaudRate(9600);
+        port.setComPortTimeouts(SerialPort.TIMEOUT_WRITE_BLOCKING, 3000, 3000);
+        return port;
+    }
+
+    private static String descriptiveText(SerialPort port) {
+        return safe(port.getDescriptivePortName()) + " " + safe(port.getPortDescription())
+                + " " + safe(port.getPortLocation());
+    }
+
+    private static String safe(String value) {
+        return value == null ? "" : value;
     }
 }
