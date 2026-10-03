@@ -67,7 +67,8 @@ public class JWTTokenFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         String method = request.getMethod();
 
-        return new AntPathMatcher().match("/auth/**", path) || (method.equalsIgnoreCase("GET") && (
+        return new AntPathMatcher().match("/auth/**", path) ||
+                new AntPathMatcher().match("/version", path) || (method.equalsIgnoreCase("GET") && (
                 new AntPathMatcher().match("/products/**", path) ||
                 new AntPathMatcher().match("/categories/**", path)||
                 new AntPathMatcher().match("/products", path) ||

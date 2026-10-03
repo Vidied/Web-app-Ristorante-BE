@@ -15,18 +15,20 @@ public class PrinterConfig {
     public SerialPrinterConnection pizzeriaPrinterConnection(
             @Value("${printer.pizzeria.port}") String port,
             @Value("${printer.pizzeria.name-hint}") String nameHint,
+            @Value("${printer.pizzeria.mac:}") String mac,
             @Value("${printer.pizzeria.max-retries:3}") int maxRetries,
             @Value("${printer.pizzeria.retry-delay-ms:1500}") long retryDelayMillis) {
-        return new SerialPrinterConnection("pizzeria", port, nameHint, maxRetries, retryDelayMillis);
+        return new SerialPrinterConnection("pizzeria", port, nameHint, mac, maxRetries, retryDelayMillis);
     }
 
     @Bean
     public SerialPrinterConnection cucinaPrinterConnection(
             @Value("${printer.cucina.port}") String port,
             @Value("${printer.cucina.name-hint}") String nameHint,
+            @Value("${printer.cucina.mac:}") String mac,
             @Value("${printer.cucina.max-retries:3}") int maxRetries,
             @Value("${printer.cucina.retry-delay-ms:1500}") long retryDelayMillis) {
-        return new SerialPrinterConnection("cucina", port, nameHint, maxRetries, retryDelayMillis);
+        return new SerialPrinterConnection("cucina", port, nameHint, mac, maxRetries, retryDelayMillis);
     }
 
     @Bean

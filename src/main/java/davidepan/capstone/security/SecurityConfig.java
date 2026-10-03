@@ -42,6 +42,7 @@ public class SecurityConfig {
 
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/version").permitAll()
                         .requestMatchers(HttpMethod.GET, "/products/**", "/categories/**", "/ingredients/**", "/products", "/categories", "/ingredients").permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/products/**", "/categories/**", "/ingredients/**", "/orders/**").hasAnyAuthority("ROLE_ADMIN")

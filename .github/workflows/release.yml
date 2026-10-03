@@ -20,7 +20,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Build with Maven
-        run: mvn clean package -DskipTests
+        run: mvn clean package -DskipTests -Dapp.git-commit=${{ github.sha }}
 
       - name: Genera tag versione
         id: version
